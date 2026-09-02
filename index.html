@@ -35,6 +35,43 @@
 
   /* ---------- układ planera ---------- */
   #app{display:grid;grid-template-columns:290px 1fr 320px;grid-template-rows:auto 1fr;height:100%}
+  /* Zwinięte panele: kolumna schodzi do zera, a mapa dostaje całą zwolnioną szerokość. */
+  #app.noleft{grid-template-columns:0 1fr 320px}
+  #app.noright{grid-template-columns:290px 1fr 0}
+  #app.noleft.noright{grid-template-columns:0 1fr 0}
+  /* Kolumny przypisane wprost: bez tego ukrycie panelu wypadało z siatki i pozostałe
+     elementy przesuwały się o jedną kolumnę — mapa dostawała szerokość 0. */
+  #left{grid-column:1}
+  main{grid-column:2}
+  #right{grid-column:3}
+  #app.noleft #left, #app.noright #right{display:none}
+  /* Przycisk zwijania w nagłówku panelu — uchwyt przy krawędzi jest łatwy do przeoczenia,
+     więc służy tylko do rozwinięcia z powrotem, gdy panelu już nie widać. */
+  .foldbtn{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+           border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:13px;line-height:1;padding:0}
+  .foldbtn:hover{color:var(--accent);border-color:var(--accent)}
+  .foldbtn.right{position:absolute;top:10px;right:12px;z-index:3}
+  #right{position:relative}
+  /* Przyciemnienie pod panelem na telefonie: dotknięcie obok zamyka panel. */
+  /* Bez atrybutu `hidden`: reguła `.show{display:block}` i tak by go pokonała, a element
+     z `hidden` i klasą `show` naraz przechwytywał dotknięcia górnego paska. Stan trzyma
+     wyłącznie klasa. Pasek narzędzi leży nad przyciemnieniem, żeby dało się z niego korzystać. */
+  #scrim{position:fixed;inset:0;background:rgba(43,41,37,.35);z-index:15;display:none}
+  #scrim.show{display:block}
+  header{position:relative;z-index:21}
+  @media (min-width:901px){ #scrim{display:none !important} }
+
+  .panelgrip{position:absolute;top:50%;transform:translateY(-50%);z-index:8;width:16px;height:52px;
+             display:flex;align-items:center;justify-content:center;cursor:pointer;
+             background:var(--panel);border:1px solid var(--line);color:var(--muted);
+             font-size:11px;line-height:1;padding:0;box-shadow:var(--shadow)}
+  .panelgrip:hover{color:var(--accent);border-color:var(--accent)}
+  #gripLeft{left:0;border-left:0;border-radius:0 8px 8px 0}
+  #gripRight{right:0;border-right:0;border-radius:8px 0 0 8px}
+  /* Uchwyt przy krawędzi służy WYŁĄCZNIE do rozwinięcia schowanego panelu. Gdy panel jest
+     widoczny, ma własny przycisk w nagłówku — dwa przyciski do tej samej rzeczy myliły. */
+  #app:not(.noleft) #gripLeft, #app:not(.noright) #gripRight{display:none}
+  @media (max-width:900px){ .panelgrip{display:none} }
   header{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:8px 12px;
          background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
   header .brand{font-weight:600;margin-right:8px;white-space:nowrap}
@@ -52,6 +89,15 @@
   .dropmenu button{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;
                    cursor:pointer;font:inherit;font-size:13px;border-radius:7px}
   .dropmenu button:hover{background:var(--accent-soft)}
+  /* Pozycje wyłącznie mobilne. Osobna klasa zamiast `.mobile-only`, bo tamta ustawia
+     `display:inline-flex !important`, co rozwaliłoby układ pozycji w menu. */
+  .dropmenu .onlymob{display:none}
+  /* Na wąskim laptopie osobny przycisk „＋ Strefa" rozpychał pasek do przewijania.
+     Strefa przenosi się wtedy do menu „＋", razem ze stołami — tam i tak jej szukamy. */
+  @media (max-width:1200px){
+    .roomy{display:none !important}
+    .dropmenu .onlymob{display:block}
+  }
   .spacer{flex:1}
   aside{background:var(--panel);overflow-y:auto;display:flex;flex-direction:column;min-height:0}
   #left{border-right:1px solid var(--line)}
@@ -134,15 +180,21 @@
   main{position:relative;overflow:hidden;background:var(--bg);min-height:0}
   svg#canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
   svg#canvas.panning{cursor:grabbing}
+  /* Bez tego przeciągnięcie kursora po mapie działa jak przeciągnięcie po tekście
+     i przeglądarka podświetla na niebiesko napisy: „Parkiet", nazwy stołów, podpisy krzeseł. */
+  svg#canvas, svg#gvCanvas{user-select:none;-webkit-user-select:none}
+  svg#canvas text, svg#gvCanvas text{user-select:none;-webkit-user-select:none}
   .float{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;
          box-shadow:var(--shadow)}
-  .zoomstack{right:12px;bottom:12px;width:40px;padding:0;overflow:hidden;display:flex;flex-direction:column}
-  .zoomstack button{border:0;background:none;padding:9px 0;cursor:pointer;font:inherit;font-size:15px;
-                    color:var(--ink);border-bottom:1px solid var(--line)}
-  .zoomstack button:last-child{border-bottom:0;font-size:13px}
+  /* Poziomy pasek zamiast pionowej wieży: zajmuje 26 px wysokości zamiast 120 i nie
+     zasłania prawej krawędzi sali, po której najczęściej stoją stoły. */
+  .zoomstack{right:12px;bottom:12px;padding:0;overflow:hidden;display:flex;align-items:stretch;height:28px}
+  .zoomstack button{border:0;background:none;padding:0 9px;cursor:pointer;font:inherit;font-size:14px;
+                    line-height:1;color:var(--ink);border-right:1px solid var(--line)}
+  .zoomstack button:last-child{border-right:0}
   .zoomstack button:hover{background:var(--accent-soft);color:var(--accent)}
-  .zoomstack .lvl{font-size:10px;color:var(--muted);padding:5px 0;text-align:center;
-                  border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .zoomstack .lvl{font-size:10.5px;color:var(--muted);padding:0 7px;display:flex;align-items:center;
+                  border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
   .hintbtn{left:12px;bottom:12px;width:30px;height:30px;border-radius:50%;padding:0;cursor:help;
            display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;
            border:1px solid var(--line);background:var(--panel)}
@@ -245,8 +297,8 @@
   .attrcard .vals{margin-top:2px}
 
   /* ---------- projekty ---------- */
-  #btnProject{flex:none;max-width:220px;display:inline-flex;align-items:center;gap:7px}
-  #projName{display:inline-block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #btnProject{flex:none;max-width:190px;display:inline-flex;align-items:center;gap:7px}
+  #projName{display:inline-block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .syncdot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted);display:none}
   .syncdot.on{display:inline-block}
   .syncdot.synced{background:#6f8f6a}
@@ -330,14 +382,52 @@
   /* ---------- mobile ---------- */
   @media (max-width:900px){
     #app{grid-template-columns:1fr}
-    aside{position:fixed;top:0;bottom:0;width:min(320px,86vw);z-index:20;box-shadow:var(--shadow);
-          transform:translateX(-105%);transition:transform .22s}
-    #left{left:0}
-    #right{right:0;left:auto;transform:translateX(105%)}
+    main{grid-column:1}
+    /* Panel zaczyna się POD paskiem narzędzi. Przy `top:0` jego pierwsza sekcja
+       („Podsumowanie planu") chowała się za paskiem, który leży wyżej w stosie. */
+    aside{position:fixed;top:var(--hdrH,56px);bottom:0;width:min(320px,86vw);z-index:20;
+          box-shadow:var(--shadow);transform:translateX(-105%);transition:transform .22s}
+    #scrim{top:var(--hdrH,56px)}
+    /* Zapas na pasek gestów u dołu iPhone'a — bez tego stopka panelu kończy się
+       dokładnie na krawędzi ekranu i przyciski trudno trafić kciukiem. */
+    #left .panel-foot{padding-bottom:calc(9px + env(safe-area-inset-bottom, 0px))}
+    /* Uwaga: `#left` ma wyżej regułę `position:relative` (selektor ID), która wygrywa
+       z `aside{position:fixed}` mimo zapytania medialnego. Bez powtórzenia `position`
+       tutaj panel gości zostawał w układzie siatki i zabierał 637 z 844 px wysokości —
+       na mapę zostawało 150 px, czyli dokładnie zgłoszone „ucina 3/4 ekranu". */
+    #left{position:fixed;left:0}
+    #right{position:fixed;right:0;left:auto;transform:translateX(105%)}
+    /* `aside.open` (specyficzność 11) przegrywa z `#right` (100), więc panel dostawał klasę,
+       ale zostawał za krawędzią ekranu. Reguła otwarcia musi być tak samo szczegółowa. */
+    #left.open, #right.open{transform:none}
     aside.open{transform:none}
     .mobile-only{display:inline-flex !important}
     .hint{display:none}
-    #projName{max-width:110px}
+    #projName{max-width:96px}
+    .wide-only{display:none !important}
+    .dropmenu .onlymob{display:block}
+    /* Ciaśniejszy pasek: bez tego ostatni przycisk wystawał poza ekran i trzeba było
+       przewijać nagłówek, żeby otworzyć panel planu. */
+    header{gap:4px;padding:7px 8px}
+    header .btn{padding:6px 9px}
+
+    /* --- widok gościa na telefonie ---
+       Nagłówek zabierał 166 z 844 px, zanim gość zobaczył cokolwiek z sali.
+       Tytuł jest mniejszy, zakładki niższe, a podpowiedź znika, gdy tylko ktoś
+       zacznie szukać — od tego momentu wie już, co ma robić. */
+    #gvHead{padding:9px 12px 8px}
+    #gvHead h1{font-size:16px;margin:0}
+    #gvHead p{font-size:12px;margin:2px 0 8px;line-height:1.35}
+    #guestView.searching #gvHead h1{display:none}
+    #guestView.searching #gvHead p{display:none}
+    #gvTabs button{padding:7px 4px;font-size:12.5px}
+    #gvSearch{font-size:16px}          /* 16 px = Safari nie przybliża pola przy dotknięciu */
+    /* Nazwa wydarzenia i tak stoi na przycisku projektu — dublowanie jej w pasku
+       zabierało miejsce potrzebne przyciskom. */
+    header .brand{display:none !important}
+    /* Legenda na telefonie zasłaniała ćwierć mapy; startuje zwinięta, rozwija się kliknięciem. */
+    #legend{max-width:46vw}
+    #legend:not(.collapsed) #legendItems{max-height:38vh;overflow:auto}
   }
   .mobile-only{display:none}
   @media (min-width:901px){ .desktop-hide{display:none !important} }
@@ -398,30 +488,38 @@
 <!-- ============ PLANER ============ -->
 <div id="app">
   <header>
-    <button class="btn mobile-only" data-act="toggle-left">☰ Goście</button>
+    <button class="btn mobile-only" data-act="toggle-left" title="Lista gości">☰<span class="wide-only"> Goście</span></button>
     <span class="brand desktop-hide" id="brandName">Plan sali</span>
     <span class="brand mobile-only" style="display:none"></span>
     <button class="btn ghost" data-act="projects" id="btnProject">
       <span class="syncdot" id="projSync"></span><span id="projName">Plan</span> ▾</button>
     <span class="grp">
       <span class="menuwrap">
-        <button class="btn ghost" data-menu="tableMenu">＋ Stół ▾</button>
+        <button class="btn ghost" data-menu="tableMenu" title="Dodaj stół">＋<span class="wide-only"> Stół</span> ▾</button>
         <div class="dropmenu" id="tableMenu" hidden="">
-          <button data-act="add-round">Okrągły</button>
-          <button data-act="add-rect">Prostokątny</button>
+          <button data-act="add-round">Stół okrągły</button>
+          <button data-act="add-rect">Stół prostokątny</button>
+          <div class="mdiv onlymob"></div>
+          <!-- `data-more`, a nie `data-act`: na dużym ekranie strefa ma własny przycisk
+               w pasku i dwa elementy z tym samym `data-act` psułyby selektory. -->
+          <button class="onlymob" data-more="add-zone">Strefa (parkiet, bar…)</button>
         </div>
       </span>
-      <button class="btn ghost" data-act="add-zone">＋ Strefa</button>
+      <button class="btn ghost roomy" data-act="add-zone">＋ Strefa</button>
     </span>
-    <span class="grp">
+    <span class="grp wide-only">
       <button class="btn ghost" data-act="undo" id="btnUndo" title="Cofnij (Ctrl+Z)">↶</button>
       <button class="btn ghost" data-act="redo" id="btnRedo" title="Ponów (Ctrl+Shift+Z)">↷</button>
     </span>
     <span class="sep"></span>
-    <button class="btn primary" data-act="autoseat">Rozsadź automatycznie</button>
-    <button class="btn" data-act="preview">Podgląd gościa</button>
-    <button class="btn" data-act="share">Udostępnij</button>
-    <span class="menuwrap">
+    <button class="btn primary" data-act="autoseat">Rozsadź<span class="wide-only"> automatycznie</span></button>
+    <span class="sep wide-only"></span>
+    <span class="grp wide-only" title="Co zobaczą goście">
+      <button class="btn" data-act="preview">Podgląd gościa</button>
+      <button class="btn" data-act="share">Udostępnij</button>
+    </span>
+    <span class="sep wide-only"></span>
+    <span class="menuwrap wide-only">
       <button class="btn" data-menu="fileMenu">Plik ▾</button>
       <div class="dropmenu" id="fileMenu" hidden="">
         <button data-act="projects">Projekty…</button>
@@ -433,17 +531,22 @@
         <button data-act="github">Synchronizacja z GitHubem…</button>
       </div>
     </span>
-    <span class="menuwrap">
+    <span class="menuwrap wide-only">
       <button class="btn" data-menu="printMenu">Drukuj ▾</button>
       <div class="dropmenu" id="printMenu" hidden="">
+        <button data-act="export-txt">Lista gości wg stołów — plik tekstowy</button>
         <button data-act="export-csv">Lista gości wg stołów — CSV</button>
         <button data-act="export-png">Plan sali — PNG</button>
         <button data-act="export-pdf">Wydruk / PDF</button>
       </div>
     </span>
+    <span class="menuwrap mobile-only">
+      <button class="btn" data-menu="moreMenu" title="Więcej">⋯</button>
+      <div class="dropmenu" id="moreMenu" hidden=""></div>
+    </span>
     <span class="spacer"></span>
-    <button class="btn" data-act="settings">Ustawienia</button>
-    <button class="btn mobile-only" data-act="toggle-right">Panel</button>
+    <button class="btn wide-only" data-act="settings">Ustawienia</button>
+    <button class="btn mobile-only" data-act="toggle-right" title="Panel planu">▤</button>
   </header>
 
   <aside id="left">
@@ -451,6 +554,7 @@
       <div class="ph-top">
         <h2 class="sec">Goście</h2>
         <span class="count" id="cntSeated"></span>
+        <button class="foldbtn" data-act="fold-left" title="Zwiń listę gości">‹</button>
       </div>
       <div class="bar"><i id="bar" style="width:0%"></i></div>
       <div class="row srow">
@@ -524,11 +628,13 @@
       <div id="legendItems"></div>
     </div>
     <div class="float zoomstack">
-      <button data-act="zoom-in" title="Przybliż">+</button>
-      <div class="lvl" id="zoomLevel">100%</div>
       <button data-act="zoom-out" title="Oddal">−</button>
+      <div class="lvl" id="zoomLevel">100%</div>
+      <button data-act="zoom-in" title="Przybliż">+</button>
       <button data-act="zoom-fit" title="Dopasuj do sali">⤢</button>
     </div>
+    <button class="panelgrip" id="gripLeft" title="Zwiń / rozwiń listę gości">‹</button>
+    <button class="panelgrip" id="gripRight" title="Zwiń / rozwiń panel">›</button>
     <button class="float hintbtn" id="hintBtn" aria-label="Skróty i wskazówki">?</button>
     <div class="float hintbox" id="hintBox" hidden="">
       <div><b>Gość</b> — przeciągnij z listy na krzesło; krzesło na krzesło zamienia osoby</div>
@@ -540,7 +646,11 @@
     </div>
   </main>
 
-  <aside id="right"><div id="inspector"></div></aside>
+  <aside id="right">
+    <button class="foldbtn right" data-act="fold-right" title="Zwiń panel">›</button>
+    <div id="inspector"></div>
+  </aside>
+  <div id="scrim"></div>
 </div>
 
 <!-- ============ WIDOK GOŚCIA ============ -->
@@ -596,7 +706,7 @@
 <div id="modalWrap"><div id="modal"></div></div>
 <div id="printRoot"></div>
 <!-- Tu eksport wstawia zaszyfrowany plan. W pliku roboczym pozostaje pusty. -->
-<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"yDEhyxvzT8zVTPlzXal3qw","iv":"JjBt5qxdu1ghVEMC","data":"xBfsU1svSiZrv7sUX7MHCYFrNJulXvDfthuY9cP68nTLEvj6SYMK-TgplBefZq9s5rJKgFKHyX5l22OZeUQ91cgsVRa9MxBqs3ii6xHNtejk3hDr0m2xh9jouRDs_alrQnwzEzPyEW7FF4set9zkgbdsayh6dih-hSiAwBlnGA5YF1gyWKggsgM9_4bse9p9UKDTQGOGcgAw0LwBBg0GsKuOKZi6hXHyOm_6vPx-zKDOgYLvr1ff8Yg3dTz4qfiIA1gA2cbGSrtu_Mpt4Fbp4UybWGDxgETW_A3ys5_jFxks1AuBXUdfI1BjF01Hr4QadkwZtCRj_6znQEeURI5RdmJisGwwBKIcikqUxKw5HyTlRQblSp_KbNXROmam4jsELNMY16e_faRNntMfCZXnQUJHGLxIt7rGdoSTcTNz8_7mKNPbL0iJ1RIEQa6c_JloQuV6EB3sy1SvaZBr0SiKwhKDEK36PwRAuUW7HEY2stqIHcujcMMgn6SrmwPdgmgJTr8eigTy_AGwKYNihWXWfaHDaCxWPjGrVICYsYFLvDM_Udd-L4nNPbk-HLruesyVOka5VpnvV8rfFpaVu3QpavhO7yN2TpcBRQNz6Lm5T_6gn-__H2LkTYcK_83bHK4QpTEUr0uzEasJO6r9YdZduTogQcBLeBBrr7eYlKqieAlOAA0kU7VruaiVYA-AThUjB5uD7X5bbyAVHLRfXAaN3V_rLvs9CXm3KPr57sKn0brgdJRBGM63iohsbvRz5fW72F02MT_S7Ss4QhmMeqnORjiDoeUz2TFrZ-_KITjR_9q49dSRD-nUV5DCuh6Rbi8Q6zAVIQu4rql34oeJSau8pWX77EAmT-3u06Kpm5wXlcu4AA1a7eap1oIjipFM5LAytN6zwG8oTxIwc1H5oITfK66JBuocT5fg0KkJoM_X9uCIi7cN47arplJBUTE0tZuEHvdXV9MPsrz-nHFlrSKd_MrGOfNVFf8jrBUbAKaKWDsr6LhcDzQ6HaGwhqNbyJpqFopufFUPOuSvgogIkuU3ifp6B2kOTpQpAhbD8mJrjM0TS0xRIbho3c5kSiKdGypeWMbw378sDrYzFeJO_0eIMshWTJy79t7ix0dKAG2VGg0WzVqVO7zaB6FGtTUd5DzJEDw--tUiNEAqKXjc05fvwXghBcjo91D9jn2E99bcq_9LXy6JRfbv5aurG--jWJhZu4xzoAGxgep73Y0gac6_r7hWwBamXwES7PD0sBrn2Z9Xaa6FpBBlxWQIfPZV4FCDUb1Mjruf4xfCWJam93L2-asGADeQnR3tW0-vX6uX7KgmT1JsamFoJt5VFAb9WyzNsZysU_4jQ1_tu5igq_PLHvH1xnZTnqVNML4TUf1tuflnOpDZLSyu6Lsro926Fklq9pOnKtpbgWHMvsOMCzWyCSCWpTMG_rTDds1urGsu6xBdK57kyCkcMlV0j--UP4q6QxP7AtKItZtOuNAnzOCfryAMSU1bJM1-emOfdT8biK4dg07BypKG1KhGUhJ5VPCzxIWa5NptfX534wI6TZmLHbwCa1ZeQ-XoW5NOFYAAHZUWDLKVlXVddSCkAFPZ1rjU8W_LLYuUWZCMGyfMWO71IAYv2_xPIgKke8DJfO72Iov8WSPY3COKHynZ2unmF4WfEY_2hMW15SCDBly7aehqtUFZYvP2N43GlL51sawXXuDHurowmbTQyj2iwIMzuVyu19xcSCHb5zdEPQUnAs2iyLv5uQJt6F6MdbuKmogRYZYCc5W9zdah54LkfiUgKpfKCMuRfmQhdX-G6RpTZHXoZQVdkZ8WafYw89_kDb9NzMkAqxYoVjm5SAXK2LOx6TpxyZ7mtTYLKLx-S75qodOIMuup8taDJeN04Le9NQJM6kRNAI8ZCuCtvZh8qHHOefFLxB3njtoa-qtQDmY9qx3U0aTuW8xOOMAxpgDICK7ruJk9Zmf8xoVrc0zmlueK8eLLrVR4jB14IgsRPanoKMjgwtd4cy7dWiN-Yzfqu91FUZzsvFeT6iwvPIShUSLdTrRpWhAB9ua1t-mJR1F7xWZLfBYJXMz3ikNyrxgAAggc-n7RmADLqURinh-eEFh9pl52LSQECQ_0fPcHeFgsMCTp024u67JmPbobuUICeztNWTtoyr25y5Y0QfyNJU8_C5MLS7nD7w8wvmbizmPTurx1IKSu6JyQOjilbw-UW0eEb6W-ZUF49FkQeqE9aqqzFf73RYsACn3pyXnXGQCQRNtlzvC0kBc7M9Q1Uj7nG7RUBAcnMIU34Kj9HtUarP_4LZMjxsLRHfr0cZdFJ7_Vb6bUz8Km8r7e61TdFB3VNL6p8Wz1MwWV-oBGMqv0PSnVXnSOJxW2DLLCmcoTuyOfyTArzRFILAWZH6qDndgrKaCX5_YD1HUv9vR4mHr_3jn4s_WJmxEd7G2BxbuOt_X4V1aiQlTadJMcYV0ouy5AiVcc5Xe94OOb8G6KeE2p5fmt09eI3VIrWTaxbx61c3qdCc5jY2taELQssE_NWaJNKnOvPc00VsVtmrmqzyP1955B06zymqQE3RjWyB_ZQVuaQCLhYxEmfr2VpFPVjbT7C1xKI-mQwR1t630V9Tukaw5F75aAkRbnDSylk9dn3slR55Xr3h72-MG96t8VmfonBqKqOVASCapZUnQtMvfLDQVEnUu59W65qopcGgS8UDQZ3UNaAw3vIEi0sKl4PY0G8UyzOZ0_MmGygQWnlmTZg0usToQI-SO580lsrifNecjq7CMZ24gL99tAemcONziagWepYJWia2V2cnop702bDPZ8UAQcO77s_911FAFGypYe3u_ZOh8tdGS0Zd7KZqb3mOJF7io6DJTNrMg1XgIyxvQ_-nL-JulTxHVXgcnXjgutoe02w8PX6f25O1Z9fSvp6w5yR8P0yT0mz-5wOM15FfJQ_ui8ZpeRWiw1nDQOeoZgxIr3D4bI0xsycXuIbsEPCPfuOwrtSA71ENi3Y_KLiEkgBXj4ABeVIthPxdMteAUTcqqo6DnfpAh7GV0pP17Uibt9S3e9Z2PdiwnT54cjV-4U8CS35yFpRvc5MQ21IemuW5QTY6nhhhfSVxjSDfO2WRyavqtKrut3M1rMTzBH83JsZvviHk08ClM2G2pWnarWY3y9wDnwpddTRlgnVz2ydnI9IYQdL_0EMekwYuawuzz_CHcaeOR9L-JdfBYbCXE"}</script>
+<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"T28LIT7r1PtpISqGWNWX0w","iv":"t4kmAVmFbpkQwJ_F","data":"-GWDPAlO-MUKt47ITGHDlmyDB4f9-j6SwfniHLOpL_yTecRuc-MZj2A1xkcCwC44WkCRVum3wg1U1Cqm2KCqt5QU7ByEKsfH2tUYVqSCK3kvImVilQ9LMHHq06E6hnaXTv0C_kFJonIRScQTgsXG6lH1H8AVp5gNIvattXEYvUjOpst5Q_r6mHpXI6FFcZgls0mhyqUqwHEr1SzjgN2B5FqHvsMalM4Q3DMH0CmcOhAfavDhigOLWLuKB8V_OokZEvuW_nSQy3Nev2y3-4ZJ69c8YmaMxucVYCrZrtgsbPCKD2i-_D8lEE0TIjhlZLbnJ8jK6hMLPQyNLqkGQaTtf0i4oNL2DiivpoDm21hDd24mBH9DhyAPm7ukN8hrbO8ClgrSuc3dkSynw-rmME7SLQak5_FhGaIjR3ilZ40qRwMCalXV08W61Egr1js3xOYT2xXMmpjsOuXY6ge2luSgaXtry9eNzMUh2HbuB0jJC2rnoTcyg9vjKFzrUhqiUnNzBvfYEWvHK8j2Jct0MHulCeMBIcCDuob-09ABB8cNTEBp5Bgc8t8Q6fxRmYd0ZH3nvx46-rQw46dBuUr9_fzjdCGr0FRnrDhwy8hlctgREs3awC9HH4ACT6q19i5kZgjcBPdCw3QVMVa6ILK8yPgm-lAOlCE4YJyAtqeTzpFsykO5lRM6s9MewnBiY_WDFKui4XhidYm85mrywsva23MAFyFJjPg4z7zpjk7ntqBv83mEd-EslNP4ECaxSlHoyHagD1II16pVyGfJai6Z1RnOb76zB5FqHTNIrUTMPlRr0KOIjC5jyMzWl6zcqCrXkYso-I_pnFULbCtoTFFXC5pm2Y7Ti7889JWBk6B27ejfqq71BiyurODfZq692Y0ffWZlFzkXlKu8WqASqZL0M6_6oZU3M1xnVJNd3Tii288G-5y6d5KvTPcIIecb8Og24jYCXtm6ayE5WHKI_yoJHsY45rR3rhgdwE8995nRKpd4UPxzV_AuJffkZh-RZXz6Im8EqM7z9jotFYvZFA9myVPjwnaWBzEhFVNEepsbXVbTDGMDggwZp-2Jg88gcrx_I4uXSzefQGmlLbieu2GXoCoXVCn0FhgQCsooJXyMvyOK9wlDIn-xtLN-8ZI5qpyngTSXDi4jvLgYAcMLVLYdNwdbcFhNDBPGpQjFVIQzUv6AWxS15EbZsAhdDUch_fmSsKS2JKb7DlosDBT92txlVr2eC8C2CCUXiUE2UOxNXZ9Ba4BXG_MHRkJaaOX5JsdtaBzMRaDosoDOaLCR6UsW5X1m76Y6cOsbuyDibGG-WYoglzYmApyHeD5nS2XdCVqLKbDQn2TEtURV3RaQBaB3TJ3VD_Eit3hhwewcQPZfFu-lrP10YHUClsMsNQGtcj2h8AC0ULnEicxpSftn9myPSV3tWENi2wMlDeIKAM-qokKN_AtTDbanZ2sftB4u7xZEEqOkbg-yIB5PFtENirv5EpG3SgYpCy-MHVv-dX_9qrdBO2LExzKVtGgoexpP1jnzko3ht4B2KL_aEqPuCVMax4Y3NBqlXpcS5A6PMIDFO5X7fjaM9kVh_Yj6GnmKMueEyG42kBdEdSqxcsQGsZGyh3de3uXPHO8qM1mfXl7v_f-gZPvzW5q-N_5GO5QsoAEz-1ddzziiF3Jc7jmRhwFz7LigtUS35rk3sMaTivV1Mt8VDosmAzK_DhIkkITBjbEs4uqday9cPxQuDCK3XGu5EJtLCoAXkbLVUgyAKG3Iy3_grzadKCjkd5Qidi-ia3LByDlzUAM4PlhuiUyw7NtjWnWJVGK6Sa7TFu2-7p7aF34-h4zJ4X7TxZgYCGmv37dO5jvosfAibh-Fh5zhPLJAZWj5YuVolLIo9uQvAXby4asLwPQ0IGOOHu2HMgF-tpYyYR5gL_thO21FjPmN13KppuDgkMsYSXdQsOSxYTeSzhLUvks-gzphNRA-PRpWrZ9nbM-YmuPyk-yfOeErcN_rP5xRdBK2L-HcGI7zYJEaeqzLyW17U96CnkCyG33WIMVgYabwz_fwIMT9ysec117CqIfAYEnXhXTRLgwImeHF86zvxrHPOyhGDNIQxLMp34wxQVtJyguHUgqw2kQs9tR8fgtYhqLJBEilLqqu9HeGOPE445yjcch4GysVXsCjp7hscO7nBhZK_dRglqlSEYSEGnB5_YAWXiC-thsVCdLmL0C5naWozGGoD35W2DSxeObXTftELwWfIZUSx2jd9qTQCs0Jxw6B6A-Y7o5AQW37cJb575OviICacsT8smeBORZlfABB2LCnRDkAHNswNVr-KPcnLj6_aXB-R3ImJeEo30ppFKVcrRZQz0lJs2TLAwRkDCKViDfqNC8d-6w7U8wkkGhFs2mgVe8_0l19w2KtmJhsBxaKtN5nbTO4crlVDeskIARSwpPsNimUeJe_41rpr_lf9cgIuX0awGwVUN0XHfaN23QbnAi8vkmw6eQrrTwWVOKyzLiY6vPofw8M2pZ7mYtV1HTFfWGER9tt595BzYmzM1rBAou49n_oOEUYfsBA1-c-qUWIunn71ksJv-_m6CxhivSUbpKT7n20smNqPPUvxP96VOyNFfye55bTq6nQqxZGEhj7-LECbriH530WWhdPQ-fg8hogc3oyxMI3sEGvYsiXBrZTMSmDeG4Kn80cExiKe8rVX0wfIoOEn_IZJPEWcoEZaaXW7jcgEtYue6d23v7vG7hILuPPtvizXCfnnNfMugavn_LJqOg5tfn-6Tn03cCQ76bWudOuDbTwVSqxhxC2Nn72A_cuAkIIl4FyU_ITh8RUd39yHSCA_QQOsYzCdCpAv_z5YSTn8Y2nH3z9QCf3bkeq8GwOT0VpCO81c7SewM4WTqKqV4eJx-HlhgHN-6F7frdXT5focTdJu9dVR3Q5w8POLQzklqvCQE38dNBAklyaj572n4V_cMvcPUwiGtzq2KCviOIcRQjDR8YoxARmpwbyuGGoEztihKDmbcDIpB_MFXiT_wY-BwGRditVrfKzAvrEq6b-HOUnLKTPRrKatZRlyyz-oJMr8nhAfL4pZG6kDT7p7vGYlBzDgQ7prGikJnEdVEAkKLqvnVlZvScX5ogfR0tPrhb6x09X8RbhKWRUknzXaQ"}</script>
 <input type="file" id="fileInput" accept="application/json,.json" hidden="">
 <input type="file" id="csvInput" accept=".csv,.txt,text/csv,text/plain" hidden="">
 
@@ -837,7 +947,7 @@ function searchGuests(list, query) {
     }
     if (score > 0) out.push({ g, score, exact });
   }
-  return out.sort((a, b) => b.score - a.score || fullName(a.g).localeCompare(fullName(b.g), "pl"));
+  return out.sort((a, b) => b.score - a.score || byName(a.g, b.g));
 }
 
 /* ------------------------------- model ---------------------------------- */
@@ -940,7 +1050,7 @@ function emptyState() {
   return {
     version: MODEL_VERSION,
     meta: { name: "Nasze wesele", date: "", venue: { w: 2000, h: 1400 }, baseUrl: "", colorBy: "group",
-            colors: { ...DEFAULT_COLORS }, modes: ["child", "diet", "rsvp"], legendOpen: true,
+            colors: { ...DEFAULT_COLORS }, modes: ["child", "diet", "rsvp"], legendOpen: null,   // null = rozwinięta na dużym ekranie, zwinięta na telefonie
             protect: false, shareKey: "", accessCode: "" },
     groups: DEFAULT_GROUPS.map(g => ({ ...g })),
     attrs: defaultAttrs(),
@@ -1802,7 +1912,7 @@ let view = { x: -120, y: -120, w: 2240, h: 1640 };
 function renderScene(svg, s, opts = {}) {
   const { selection: sel = null, badSeats = new Set(), highlight = null,
           interactive = true, showNumbers = true, showNames = true, markSeat = null, colorBy = "group",
-          foundSeats = null, pxPerUnit = 1, namesOnlyTable = null } = opts;
+          foundSeats = null, pxPerUnit = 1, namesOnlyTable = null, viewW = null, nameFont = null } = opts;
   svg.replaceChildren();
 
   const defs = el("defs");
@@ -1825,7 +1935,7 @@ function renderScene(svg, s, opts = {}) {
   }
 
   for (const z of s.zones) svg.append(zoneNode(z, sel, interactive));
-  for (const t of s.tables) svg.append(tableNode(t, s, { sel, badSeats, highlight, interactive, showNumbers, showNames, markSeat, colorBy, foundSeats,
+  for (const t of s.tables) svg.append(tableNode(t, s, { sel, badSeats, highlight, interactive, showNumbers, showNames, markSeat, colorBy, foundSeats, viewW, nameFont,
        pxPerUnit, namesOnlyTable }));
 }
 
@@ -1860,6 +1970,10 @@ function tableNode(t, s, o) {
     "data-table": t.id,
   });
   const geo = tableGeom(t);
+  // Jeden sposób zapisu na cały stół — liczony raz, nie przy każdym krześle.
+  const nameLevel = o.showNames === "auto" && !(o.namesOnlyTable && t.id !== o.namesOnlyTable)
+    ? tableNameLevel(t, geo, o, s) : null;
+  o = nameLevel == null ? o : { ...o, nameLevel };
 
   if (o.highlight === t.id) {
     const ext = tableExtent(t);
@@ -1927,6 +2041,7 @@ function tableNode(t, s, o) {
       // inline, bo reguły CSS na .seat-name mają wyższy priorytet niż atrybuty
       if (label.isName) {
         txt.dataset.seatNo = String(i + 1);
+        txt.dataset.full = label.lines.join(" ");
         // kierunek „na zewnątrz stołu" — używany przy rozsuwaniu podpisów na wydruku
         txt.dataset.ox = Math.cos(dir).toFixed(4);
         txt.dataset.oy = Math.sin(dir).toFixed(4);
@@ -1934,7 +2049,17 @@ function tableNode(t, s, o) {
       }
       txt.style.textAnchor = anchor;
       txt.style.fontSize = label.size + "px";
-      txt.textContent = label.text;
+      if (label.lines.length === 1) {
+        txt.textContent = label.lines[0];
+      } else {
+        // Wiele linii: pierwszą podnosimy o pół wysokości bloku, żeby całość
+        // pozostała wyśrodkowana na wysokości krzesła.
+        label.lines.forEach((ln, k) => {
+          const ts = el("tspan", { x: lx, dy: k === 0 ? -(label.lines.length - 1) * label.size * 0.52 : label.size * 1.04 });
+          ts.textContent = ln;
+          txt.append(ts);
+        });
+      }
       g.append(txt);
     }
   });
@@ -1973,7 +2098,7 @@ const LABEL_MIN_PX = 7;        // poniżej tego nie ma sensu nic pisać
  * w skali sali, a odstępy między krzesłami zostają te same.
  */
 function labelFontWorld(o) {
-  if (o.showNames === true) return NAME_FONT;                 // eksport i wydruk: stała skala planu
+  if (o.showNames === true) return o.nameFont || NAME_FONT;   // eksport i wydruk: stała skala planu
   return clamp(LABEL_TARGET_PX / Math.max(o.pxPerUnit, 1e-6), 6, 30);
 }
 
@@ -1982,28 +2107,90 @@ function labelFontWorld(o) {
  * W trybie "auto" decyzja zapada OSOBNO dla każdego gościa — krótkie nazwisko
  * zmieści się tam, gdzie długie nachodziłoby już na sąsiada.
  */
+/**
+ * Warianty zapisu nazwiska, od najpełniejszego do najkrótszego. Każdy wariant to lista
+ * linii — „Anna Kowalska" mieści się tam, gdzie jedna linia nie wchodzi, jeśli rozbić
+ * je po spacji. Inicjałów świadomie nie ma: „AK" nikomu nic nie mówi, a numer miejsca
+ * przynajmniej odsyła do listy gości.
+ */
+function nameForms(g) {
+  const f = (g.firstName || "").trim(), l = (g.lastName || "").trim();
+  // Inicjał bierzemy z OSTATNIEGO członu nazwiska: „Jan Maria Rokita" to „Jan R.", nie „Jan M.".
+  const ostatni = l.split(/\s+/).filter(Boolean).pop() || l;
+  if (f && l) return [[`${f} ${l}`], [f, l], [`${f} ${ostatni[0]}.`], [f]];
+  const one = f || l;
+  return one ? [[one]] : [];
+}
+
+/** Szerokość wariantu = najdłuższa jego linia. */
+const formWidth = form => form.reduce((m, s) => Math.max(m, s.length), 0);
+
+/**
+ * Ile miejsca ma podpis przy danym krześle (w jednostkach świata).
+ * Podpisy wyrównane do boku uciekają na zewnątrz stołu i mają go dużo;
+ * ciasno jest tylko tam, gdzie stoją obok siebie w rzędzie.
+ */
+function labelRoom(t, geo, anchor, size, viewW) {
+  // Podpis z boku ucieka na zewnątrz stołu i ma tam sporo miejsca — ale nie więcej,
+  // niż mieści ekran. Bez ograniczenia szerokością widoku „Włodzimierz Dąbrowski"
+  // wyjeżdżał poza krawędź kanwy i był ucięty w połowie.
+  if (anchor !== "middle") return Math.min(size * 26, (viewW || Infinity) * 0.3);
+  return t.shape === "round"
+    ? (2 * Math.PI * (geo.r + SEAT_GAP + SEAT_R + 20)) / Math.max(1, t.seats)
+    : geo.len / Math.max(1, geo.top, geo.bot);
+}
+
+/**
+ * Wybiera JEDEN sposób zapisu dla CAŁEGO stołu.
+ *
+ * Wcześniej decyzja zapadała osobno dla każdego gościa, więc przy jednym stole
+ * „Ewa Lis" widniała pełnym nazwiskiem, a „Konstantyna Brzęczyszczykiewicz" jako „7".
+ * Taka mozaika wygląda na błąd, a nie na zamysł. Teraz schodzimy po szczeblach, aż
+ * któryś zmieści się dla wszystkich zajętych krzeseł przy tym stole — a gdy nie mieści
+ * się nawet inicjał, cały stół dostaje numery.
+ */
+function tableNameLevel(t, geo, o, plan) {
+  // Gości szukamy w planie przekazanym do rysowania, nie w globalnym `state`:
+  // widok gościa rysuje `gvState`, więc `guestById` zwracałby tam same puste wyniki
+  // i cały stół wychodził zawsze na poziomie „pełne nazwisko".
+  const src = (plan && plan.guests) || state.guests;
+  const size = labelFontWorld(o);
+  let level = 0;
+  for (let i = 0; i < t.seats; i++) {
+    const g = src.find(x => x.id === t.assign[i]);
+    if (!g) continue;
+    const p = seatPositions(t)[i];
+    if (!p) continue;
+    const world = ((p.a + t.rotation) * Math.PI) / 180;
+    const anchor = Math.cos(world) > 0.4 ? "start" : Math.cos(world) < -0.4 ? "end" : "middle";
+    const room = labelRoom(t, geo, anchor, size, o.viewW);
+    const forms = nameForms(g);
+    let fit = forms.length;                       // domyślnie: nic się nie mieści
+    for (let k = 0; k < forms.length; k++)
+      if (formWidth(forms[k]) * size * 0.52 <= room) { fit = k; break; }
+    if (fit > level) level = fit;
+    if (level >= forms.length) break;             // niżej już tylko numery
+  }
+  return level;
+}
+
 function seatLabel(t, geo, i, guest, anchor, o) {
   const size = labelFontWorld(o);
   const readable = size * o.pxPerUnit >= LABEL_MIN_PX;
-  const number = o.showNumbers && readable ? { text: String(i + 1), size: size * 0.9, isName: false } : null;
+  const number = o.showNumbers && readable ? { lines: [String(i + 1)], size: size * 0.9, isName: false } : null;
   if (!guest) return number;
-  if (o.showNames === true) return { text: shortName(guest), size, isName: true };
+  // Wydruk i PNG: pełne imię i nazwisko dla każdego. Kolizje rozwiązuje potem
+  // `spreadLabels`, które ma do dyspozycji cały arkusz, a nie ciasny ekran.
+  if (o.showNames === true) return { lines: nameForms(guest)[0] || [shortName(guest)], size, isName: true };
   if (o.showNames !== "auto" || !readable) return number;
   // Widok gościa: dopóki nikogo nie wybrano, cała sala jest numerowana. Nazwiska
   // pokazujemy dopiero przy stole, który gościa faktycznie dotyczy.
   if (o.namesOnlyTable && t.id !== o.namesOnlyTable) return number;
 
-  const txt = shortName(guest);
-  const estimated = txt.length * size * 0.52;                 // przybliżona szerokość w cm
-  // Podpisy wyrównane do boku uciekają na zewnątrz stołu i mają dużo miejsca;
-  // ciasno jest tylko tam, gdzie stoją obok siebie w rzędzie.
-  let available = size * 26;
-  if (anchor === "middle") {
-    available = t.shape === "round"
-      ? (2 * Math.PI * (geo.r + SEAT_GAP + SEAT_R + 20)) / Math.max(1, t.seats)
-      : geo.len / Math.max(1, geo.top, geo.bot);
-  }
-  return estimated <= available ? { text: txt, size, isName: true } : number;
+  const level = o.nameLevel != null ? o.nameLevel : tableNameLevel(t, geo, o);
+  const forms = nameForms(guest);
+  if (level >= forms.length) return number;       // nie mieści się nawet samo imię
+  return { lines: forms[level], size, isName: true };
 }
 
 /** Krzesła osób pasujących do pola wyszukiwania (albo zaznaczonego gościa). */
@@ -2013,7 +2200,7 @@ function renderCanvas() {
   applyView(canvas, view);
   renderScene(canvas, state, {
     selection, badSeats: conflictSeats, colorBy: state.meta.colorBy, foundSeats,
-    showNames: "auto", showNumbers: true,
+    showNames: "auto", showNumbers: true, viewW: view.w,
     pxPerUnit: viewScale(canvas, view).s,
   });
   updateZoomLabel();
@@ -2080,7 +2267,7 @@ function renderGuests() {
       if (filterGroups.size && !filterGroups.has(g.groupId || "__none")) return false;
       return !matched || matched.has(g.id);
     })
-    .sort((a, b) => fullName(a.g).localeCompare(fullName(b.g), "pl"));
+    .sort((a, b) => byName(a.g, b.g));
 
   // podświetlenie miejsc: wyniki wyszukiwania albo zaznaczony gość
   const hi = matched
@@ -2191,7 +2378,11 @@ function renderLegend() {
       return `<div class="li" title="${title}"><span class="sw" style="background:${c}"></span>` +
              `<span class="nm">${esc(name)}</span><b class="cnt">${e.n}</b></div>`;
     }).join("");
-  const open = state.meta.legendOpen !== false;
+  // `legendOpen === null` znaczy „jeszcze nie zdecydowano": na dużym ekranie legenda jest
+  // wtedy rozwinięta, na telefonie zwinięta, bo zasłaniałaby ćwierć mapy. Gdy użytkownik
+  // raz kliknie przełącznik, jego wybór jest zapamiętany i obowiązuje wszędzie.
+  const waski = matchMedia("(max-width:900px)").matches;
+  const open = state.meta.legendOpen == null ? !waski : state.meta.legendOpen === true;
   $("#legend").classList.toggle("collapsed", !open);
   $("#legendToggle").textContent = open ? "–" : "▦";
   $("#legendToggle").title = open ? "Zwiń legendę" : `Legenda: ${modeLabel(sel.value)}`;
@@ -2515,7 +2706,7 @@ function inspGuest(box) {
   const at = seatOf(g.id);
   const t = at ? tableById(at.tableId) : null;
   const others = state.guests.filter(x => x.id !== g.id)
-    .sort((a, b) => fullName(a).localeCompare(fullName(b), "pl"));
+    .sort(byName);
   const myRules = state.rules.filter(r => r.a === g.id || r.b === g.id);
   const badIds = new Set(conflicts.map(c => c.ruleId));
 
@@ -2532,7 +2723,7 @@ function inspGuest(box) {
     ${attrByRole("diet") ? `<div class="field"><label>Dieta — szczegóły</label>
       <input type="text" id="g-diet" list="dietList" placeholder="np. wegetariańska">
       <datalist id="dietList">${DIETS.map(d => `<option value="${d}">`).join("")}</datalist></div>` : ""}
-    <div class="field"><label>Osoba towarzysząca (+1) do</label><select id="g-plus"></select></div>
+    <div class="field"><label>Os. tow. (+1) — przy kim siedzi</label><select id="g-plus"></select></div>
     <div class="field"><label>Telefon</label><input type="tel" id="g-phone"></div>
     <div class="field"><label>E-mail</label><input type="email" id="g-email"></div>
     <div class="field"><label>Notatka</label><textarea id="g-note"></textarea></div>
@@ -3533,10 +3724,57 @@ function download(name, blob) {
 }
 const slug = s => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "plan";
 
+/**
+ * Lista gości jako zwykły tekst — do wydrukowania na kartce, wklejenia w wiadomość
+ * albo odczytania na telefonie bez żadnego czytnika. Numery miejsc są DOKŁADNIE te same,
+ * które widać przy krzesłach na planie (indeks + 1), żeby dało się jedno zestawić z drugim.
+ */
+function exportTxt() {
+  const L = [];
+  const line = "─".repeat(46);
+  L.push(state.meta.name || "Plan sali");
+  if (state.meta.date) L.push(state.meta.date);
+  L.push(line, "");
+
+  for (const t of sortedTables()) {
+    const zajete = t.assign.filter(Boolean).length;
+    const nazwa = (t.label || "").trim() || "STÓŁ BEZ NAZWY";
+    L.push(`${nazwa.toUpperCase()} (${nSeats(t.seats)}, ${zajete} ${plural(zajete, "zajęte", "zajęte", "zajętych")})`);
+    t.assign.forEach((id, i) => {
+      const g = guestById(id);
+      const nr = String(i + 1).padStart(2, " ");
+      if (!g) return L.push(`  ${nr}. ${t.locked[i] ? "— zablokowane —" : "— wolne —"}`);
+      const dod = [];
+      if (g.diet) dod.push(g.diet);
+      if (g.child) dod.push("dziecko");
+      if (g.rsvp !== "yes") dod.push(RSVP_LABEL[g.rsvp]);
+      L.push(`  ${nr}. ${fullName(g)}${dod.length ? "  (" + dod.join(", ") + ")" : ""}`);
+    });
+    L.push("");
+  }
+
+  const bez = state.guests.filter(g => !seatOf(g.id));
+  if (bez.length) {
+    L.push(`BEZ PRZYPISANEGO MIEJSCA (${nGuests(bez.length)})`);
+    for (const g of bez.sort(byName))
+      L.push(`  · ${fullName(g)}${g.rsvp !== "yes" ? "  (" + RSVP_LABEL[g.rsvp] + ")" : ""}`);
+    L.push("");
+  }
+
+  const razem = state.guests.filter(g => g.rsvp !== "no").length;
+  const miejsc = state.tables.reduce((n, t) => n + t.seats, 0);
+  L.push(line);
+  const ile = state.tables.length;
+  L.push(`Razem: ${nGuests(razem)}, ${nSeats(miejsc)} przy ${ile} ${plural(ile, "stole", "stołach", "stołach")}.`);
+
+  download(`${slug(state.meta.name)}-lista.txt`,
+           new Blob(["\uFEFF" + L.join("\r\n")], { type: "text/plain;charset=utf-8" }));
+}
+
 function exportCsv() {
   const head = ["Stół", "Miejsce", "Imię", "Nazwisko", "Grupa", "RSVP", "Dieta", "Dziecko", "Notatka"];
   const rows = [];
-  for (const t of state.tables)
+  for (const t of sortedTables())
     t.assign.forEach((id, i) => {
       const g = guestById(id);
       if (!g) return;
@@ -3562,12 +3800,36 @@ function buildPlanSvg(pad = 160) {
   });
   // Bez `colorBy` eksport zawsze kolorował grupami — plan dla cateringu wychodził
   // w innych barwach niż to, co układający widział na ekranie.
-  renderScene(svg, state, { interactive: false, badSeats: new Set(), colorBy: state.meta.colorBy });
+  renderScene(svg, state, { interactive: false, badSeats: new Set(), colorBy: state.meta.colorBy,
+                            nameFont: exportNameFont() });
   const style = el("style");
   style.textContent = $("#canvasCss").textContent;
   svg.insertBefore(style, svg.firstChild);   // po renderScene, bo ono czysci <svg>
   spreadLabels(svg);
   return svg;
+}
+
+/**
+ * Wielkość podpisu na wydruku dobrana do najciaśniejszego stołu w planie.
+ * Plan wisi na sali po to, żeby każdy się na nim znalazł, więc nazwisko musi zmieścić się
+ * przy KAŻDYM krześle. Zamiast degradować pojedyncze podpisy do numerów, zmniejszamy
+ * pismo tak, by najdłuższe nazwisko przy najciaśniejszym stole weszło po złamaniu na dwie
+ * linie. Eksport idzie w 2,5× skali, więc mniejsze pismo nadal jest czytelne na wydruku.
+ */
+function exportNameFont() {
+  let font = NAME_FONT;
+  for (const t of state.tables) {
+    const geo = tableGeom(t);
+    const pitch = labelRoom(t, geo, "middle", 1, null);      // rozstaw w jednostkach świata
+    for (const id of t.assign) {
+      const g = guestById(id);
+      if (!g) continue;
+      const forms = nameForms(g);
+      const szer = formWidth(forms[1] || forms[0] || [""]);  // wariant złamany po spacji
+      if (szer > 0) font = Math.min(font, pitch / (szer * 0.52));
+    }
+  }
+  return clamp(font, 8, NAME_FONT);
 }
 
 /**
@@ -3592,35 +3854,71 @@ function spreadLabels(svg) {
     const placed = [];
     const collides = r => placed.some(q =>
       !(r.right < q.left || r.left > q.right || r.bottom < q.top || r.top > q.bottom));
+    // Kolejne próby: pełne nazwisko w jednej linii → to samo złamane po spacji →
+    // samo imię → numer miejsca. Złamanie na dwie linie ratuje większość kolizji
+    // bez gubienia choćby litery z nazwiska.
+    const ustaw = (n, linie) => {
+      n.replaceChildren();
+      if (linie.length === 1) { n.textContent = linie[0]; return; }
+      const x = n.getAttribute("x"), size = parseFloat(n.style.fontSize) || 16;
+      linie.forEach((ln, k) => {
+        const ts = el("tspan", { x, dy: k === 0 ? -(linie.length - 1) * size * 0.52 : size * 1.04 });
+        ts.textContent = ln;
+        n.append(ts);
+      });
+    };
     for (const n of svg.querySelectorAll("text.seat-name")) {
-      const full = n.textContent;
-      const first = full.split(" ")[0];
+      const full = n.dataset.full || n.textContent;
+      const slowa = full.split(" ").filter(Boolean);
+      const first = slowa[0] || full;
       const num = n.dataset.seatNo || "";
+      // Numeru NIE ma na tej liście celowo: gdy był, podpis „schodził" do cyfry, zamiast
+      // spróbować odsunięcia. Numer zostaje dopiero, gdy zawiedzie także szukanie miejsca.
+      const proby = [[full]];
+      if (slowa.length > 1) proby.push([slowa.slice(0, -1).join(" "), slowa[slowa.length - 1]]);
+      proby.push([first]);
       let level = 0, fits = false;
-      for (const v of [full, first, num]) {
-        if (!v) { level++; continue; }
-        n.textContent = v;
+      for (const v of proby) {
+        ustaw(n, v);
         if (!collides(grow(n.getBoundingClientRect()))) { fits = true; break; }
         level++;
       }
+      level = Math.min(level, 2);
       if (!fits) {
-        // Nic się nie zmieściło. Zamiast drukować numer na cudzym nazwisku, odsuwamy go
-        // od stołu — kilka centymetrów wystarcza, a podpis wciąż wskazuje swoje krzesło.
-        n.textContent = num || first;
+        // Na wydruku i w PNG nazwisko ma być widoczne dla KAŻDEGO gościa — plan wisi na sali
+        // po to, żeby ludzie się na nim znaleźli. Zamiast schodzić do numeru odsuwamy podpis
+        // od stołu, a gdy i to nie starcza, zmniejszamy go. Numer zostaje dopiero wtedy,
+        // gdy nazwisko nie mieści się nawet po zmniejszeniu — czyli praktycznie nigdy.
         const ox = Number(n.dataset.ox || 0), oy = Number(n.dataset.oy || 0);
-        const x0 = Number(n.getAttribute("x")), y0 = Number(n.getAttribute("y"));
-        // Środek kontr-obrotu musi wędrować razem z tekstem, inaczej przy obróconym
-        // stole podpis okrążyłby stary punkt zamiast po prostu się odsunąć.
         const rot = n.dataset.rot || "0";
+        const x0 = Number(n.getAttribute("x")), y0 = Number(n.getAttribute("y"));
+        const bazowy = parseFloat(n.style.fontSize) || 16;
         const place = (x, y) => {
           n.setAttribute("x", x); n.setAttribute("y", y);
           n.setAttribute("transform", `rotate(${rot} ${x} ${y})`);
+          [...n.children].forEach(ts => ts.setAttribute("x", x));
         };
-        for (const push of [14, 28, 44, 62]) {
-          place(x0 + ox * push, y0 + oy * push);
-          if (!collides(grow(n.getBoundingClientRect()))) { fits = true; break; }
+        const wariant = slowa.length > 1 ? [slowa.slice(0, -1).join(" "), slowa[slowa.length - 1]] : [full];
+        // Odsuwanie wyłącznie „na zewnątrz" wpycha podpis wprost w podpisy sąsiedniego stołu.
+        // Dlatego próbujemy też przesunięć wzdłuż stołu (prostopadle do promienia) — tam
+        // zwykle jest luka między dwoma sąsiednimi nazwiskami.
+        const px = -oy, py = ox;
+        szukanie:
+        for (const skala of [1, 0.86, 0.72, 0.6]) {
+          n.style.fontSize = (bazowy * skala) + "px";
+          for (const push of [0, 14, 28, 46, 68, 94, 124, 158]) {
+            for (const bok of [0, 18, -18, 36, -36, 58, -58]) {
+              ustaw(n, wariant);
+              place(x0 + ox * push + px * bok, y0 + oy * push + py * bok);
+              if (!collides(grow(n.getBoundingClientRect()))) { fits = true; break szukanie; }
+            }
+          }
         }
-        if (!fits) place(x0, y0);
+        if (!fits) {
+          n.style.fontSize = bazowy + "px";
+          place(x0, y0);
+          ustaw(n, [num || first]);
+        }
         level = 2;
       }
       // Zajęte miejsce rezerwujemy ZAWSZE, także gdy skończyło się na numerze —
@@ -3671,7 +3969,7 @@ function printPlan() {
   const p2 = document.createElement("div");
   p2.className = "print-page";
   p2.innerHTML = `<h1>Lista gości według stołów</h1>`;
-  for (const t of state.tables) {
+  for (const t of sortedTables()) {
     const rows = t.assign.map((id, i) => ({ i, g: guestById(id) })).filter(r => r.g);
     const sec = document.createElement("div");
     sec.innerHTML = `<h2>${esc(t.label)} — ${rows.length}/${t.seats} os.</h2>` +
@@ -3973,6 +4271,18 @@ function plural(n, one, few, many) {
 }
 const nGuests = n => `${n} ${plural(n, "gość", "goście", "gości")}`;
 const nTables = n => `${n} ${plural(n, "stół", "stoły", "stołów")}`;
+const nSeats  = n => `${n} ${plural(n, "miejsce", "miejsca", "miejsc")}`;
+
+/**
+ * Porządek naturalny: „Stół 2" przed „Stół 10", a nie odwrotnie. Zwykłe porównanie
+ * tekstu układa je po znakach, więc „10" trafiało między „1" a „2".
+ * `numeric: true` w Intl robi dokładnie to, czego tu trzeba, i przy okazji zna polski alfabet.
+ */
+const collator = new Intl.Collator("pl", { numeric: true, sensitivity: "base" });
+const byLabel = (a, b) => collator.compare(a.label || "", b.label || "");
+/** Stoły w kolejności do pokazania człowiekowi (kolejność w modelu zostaje nietknięta). */
+const sortedTables = plan => [...((plan || state).tables || [])].sort(byLabel);
+const byName = (a, b) => collator.compare(fullName(a), fullName(b));
 const fmtSize = bytes => bytes < 1048576
   ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1048576).toFixed(2)} MB`;
 
@@ -4385,6 +4695,47 @@ function openGithubLink(cfg) {
   });
 }
 
+/**
+ * Zwijanie panelu bocznego. Stan trzymamy w planie, żeby przetrwał przeładowanie,
+ * a po zwinięciu przerysowujemy kanwę — inaczej mapa zostałaby w starym kadrze,
+ * jakby nic się nie zmieniło.
+ */
+const waskiEkran = () => matchMedia("(max-width:900px)").matches;
+
+/** Wysokość paska narzędzi trafia do CSS — od niej zaczynają się panele na telefonie. */
+function mierzPasek() {
+  const h = $("header");
+  if (h) document.documentElement.style.setProperty("--hdrH", Math.round(h.getBoundingClientRect().height) + "px");
+}
+
+/** Na telefonie panele są nakładkami: otwarcie jednego zamyka drugi i zapala przyciemnienie. */
+function togglePanel(sel) {
+  const p = $(sel), open = !p.classList.contains("open");
+  closePanels();
+  p.classList.toggle("open", open);
+  $("#scrim").classList.toggle("show", open && waskiEkran());
+}
+function closePanels() {
+  $$("#app > aside").forEach(a => a.classList.remove("open"));
+  $("#scrim").classList.remove("show");
+}
+
+function foldPanel(cls) {
+  const app = $("#app");
+  app.classList.toggle(cls);
+  state.meta[cls] = app.classList.contains(cls);
+  save();
+  updateGrips();
+  requestAnimationFrame(() => { applyView(canvas, view); renderCanvas(); });
+}
+
+function updateGrips() {
+  const app = $("#app");
+  const gl = $("#gripLeft"), gr = $("#gripRight");
+  if (gl) gl.textContent = app.classList.contains("noleft") ? "›" : "‹";
+  if (gr) gr.textContent = app.classList.contains("noright") ? "‹" : "›";
+}
+
 /** Adres z #gh=… otwiera okno synchronizacji z wypełnionym repozytorium. */
 function applyGithubHash() {
   const h = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -4431,6 +4782,7 @@ const actions = {
   }),
   "github": openGithub,
   "bulk-add": openImport,
+  "export-txt": exportTxt,
   "export-csv": exportCsv,
   "export-png": () => { toast("Generuję PNG…", 1500); setTimeout(() => exportPng(), 60); },
   "export-pdf": () => setTimeout(printPlan, 120),
@@ -4463,8 +4815,10 @@ const actions = {
   "zoom-out": () => { zoomCenter(canvas, view, 1.3); renderCanvas(); },
   "zoom-fit": () => { fitView(canvas, view, state.meta.venue); renderCanvas(); },
   "toggle-filters": () => setFilterPop($("#filterPop").hidden),
-  "toggle-left":  () => $("#left").classList.toggle("open"),
-  "toggle-right": () => $("#right").classList.toggle("open"),
+  "toggle-left":  () => togglePanel("#left"),
+  "toggle-right": () => togglePanel("#right"),
+  "fold-left":  () => (waskiEkran() ? closePanels() : foldPanel("noleft")),
+  "fold-right": () => (waskiEkran() ? closePanels() : foldPanel("noright")),
 };
 
 function openAutoSeat() {
@@ -4509,6 +4863,53 @@ document.addEventListener("click", e => {
   }
 });
 /* Rozwijane menu paska narzędzi — jeden mechanizm dla wszystkich. */
+/**
+ * Zawartość mobilnego menu „⋯". Pozycje wskazują akcje przez `data-more`, a nie `data-act`:
+ * gdyby w dokumencie były dwa elementy z tym samym `data-act`, selektory trafiałyby raz
+ * w widoczny przycisk paska, a raz w ukrytą kopię w menu.
+ */
+const MORE_ITEMS = [
+  ["undo", "Cofnij"],
+  ["redo", "Ponów"],
+  null,
+  ["preview", "Podgląd gościa"],
+  ["share", "Udostępnij / kod QR…"],
+  ["add-zone", "Dodaj strefę"],
+  null,
+  ["projects", "Projekty…"],
+  ["new-project", "Nowy projekt…"],
+  ["save-copy", "Zapisz kopię planu…"],
+  ["load-copy", "Wczytaj kopię z pliku…"],
+  ["github", "Synchronizacja z GitHubem…"],
+  null,
+  ["export-txt", "Lista gości — plik tekstowy"],
+  ["export-csv", "Lista gości — CSV"],
+  ["export-png", "Plan sali — PNG"],
+  ["export-pdf", "Wydruk / PDF"],
+  null,
+  ["settings", "Ustawienia"],
+];
+
+function buildMoreMenu() {
+  const box = $("#moreMenu");
+  if (!box || box.childElementCount) return;
+  for (const it of MORE_ITEMS) {
+    if (!it) { const d = document.createElement("div"); d.className = "mdiv"; box.append(d); continue; }
+    const b = document.createElement("button");
+    b.dataset.more = it[0];
+    b.textContent = it[1];
+    box.append(b);
+  }
+}
+buildMoreMenu();
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-more]");
+  if (!b || !actions[b.dataset.more]) return;
+  closeMenus();
+  actions[b.dataset.more]();
+});
+
 const closeMenus = except => $$(".dropmenu").forEach(m => { if (m !== except) m.hidden = true; });
 document.addEventListener("click", e => {
   const btn = e.target.closest("[data-menu]");
@@ -4631,7 +5032,8 @@ $("#bulkDelete").addEventListener("click", () => {
 });
 
 $("#legendToggle").addEventListener("click", () => {
-  state.meta.legendOpen = state.meta.legendOpen === false;
+  const rozwinieta = $("#legend") && !$("#legend").classList.contains("collapsed");
+  state.meta.legendOpen = !rozwinieta;
   renderLegend(); save();
 });
 
@@ -4727,6 +5129,7 @@ function gvRender() {
     showNumbers: true, showNames: "auto",
     namesOnlyTable: gvHighlight || "\u0000",   // brak wyboru → sama numeracja
     pxPerUnit: viewScale(gvCanvas, gvView).s,
+    viewW: gvView.w,
   });
 }
 
@@ -4823,13 +5226,13 @@ function gvBuildList() {
   if (gvListMode === "az") {
     gvState.guests
       .map(g => ({ g, at: gvSeatOf(g.id) }))
-      .sort((a, b) => fullName(a.g).localeCompare(fullName(b.g), "pl"))
+      .sort((a, b) => byName(a.g, b.g))
       .forEach(({ g, at }) =>
         body.append(gvRow(g, { where: at ? `${at.table.label}, miejsce ${at.index + 1}` : "" })));
     return;
   }
 
-  for (const t of gvState.tables) {
+  for (const t of sortedTables(gvState)) {
     const seated = t.assign.map((id, i) => ({ i, g: gvState.guests.find(x => x.id === id) })).filter(r => r.g);
     if (!seated.length) continue;
     const head = document.createElement("div");
@@ -4945,6 +5348,27 @@ function initGuestView() {
   gvInited = true;
 
   $("#gvExit").addEventListener("click", exitPreview);
+  // Dotknięcie stołu przybliża do niego. Bez tego jedyną drogą do własnego miejsca
+  // było szczypanie palcami po mapie wielkości znaczka pocztowego.
+  gvCanvas.addEventListener("click", e => {
+    const node = e.target.closest("[data-table]");
+    if (!node || !gvState) return;
+    const t = gvState.tables.find(x => x.id === node.dataset.table);
+    if (!t) return;
+    const first = t.assign.find(Boolean);
+    const g = first && gvState.guests.find(x => x.id === first);
+    if (g) return gvSelect(g);
+    gvHighlight = t.id;
+    const ext = tableExtent(t), span = gvZoomSpan(t, Math.max(ext.w, ext.h));
+    const r = gvCanvas.getBoundingClientRect(), ar = (r.width || 1) / (r.height || 1);
+    gvView.w = ar >= 1 ? span * ar : span;
+    gvView.h = gvView.w / ar;
+    gvView.x = t.x - gvView.w / 2;
+    gvView.y = t.y - gvView.h / 2;
+    $("#gvBack").hidden = false;
+    gvRender();
+  });
+
   $("#gvTabs").addEventListener("click", e => {
     const b = e.target.closest("button[data-tab]");
     if (b && gvState) gvSetTab(b.dataset.tab);
@@ -4956,8 +5380,11 @@ function initGuestView() {
     fitView(gvCanvas, gvView, gvState.meta.venue);
     gvRender();
   });
-  $("#gvSearch").addEventListener("input", gvSearchInput);
-  $("#gvSearch").addEventListener("focus", gvSearchInput);
+  // Klasa „searching" chowa tytuł i podpowiedź na telefonie — od chwili, gdy gość
+  // zaczął szukać, potrzebuje miejsca na mapę, a nie na instrukcję, którą już wykonał.
+  const markSearching = () => $("#guestView").classList.add("searching");
+  $("#gvSearch").addEventListener("input", e => { markSearching(); gvSearchInput(e); });
+  $("#gvSearch").addEventListener("focus", e => { markSearching(); gvSearchInput(e); });
   $("#gvSearch").addEventListener("keydown", e => {
     if (e.key === "Enter" && gvTopHit) { e.preventDefault(); gvSelect(gvTopHit); }
   });
@@ -5013,6 +5440,7 @@ function showGuestView(payload, preview = false) {
   gvHighlight = null; gvMine = null;
   $("#gvSearch").value = "";
   $("#gvSearch").disabled = false;
+  $("#guestView").classList.remove("searching");
   $("#gvResults").classList.remove("show");
   $("#gvCard").classList.remove("show");
   gvSetTab("mine");
@@ -5151,6 +5579,14 @@ if (guestByAttribute || params.get("v") === "g" || location.hash.startsWith("#d=
   history.length = 0;
   $("#btnUndo").disabled = true;
   renderProjectLabel();
+  $("#app").classList.toggle("noleft", state.meta.noleft === true);
+  $("#app").classList.toggle("noright", state.meta.noright === true);
+  updateGrips();
+  mierzPasek();
+  addEventListener("resize", mierzPasek);
+  $("#gripLeft").onclick = () => foldPanel("noleft");
+  $("#gripRight").onclick = () => foldPanel("noright");
+  $("#scrim").onclick = closePanels;
   applyGithubHash();
 }
 </script></body></html>
