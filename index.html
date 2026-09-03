@@ -346,7 +346,50 @@
           text-transform:uppercase;font-size:17px;text-align:center}
   #gvCodeErr{color:var(--danger);min-height:16px}
   #gvHead p{margin:0 0 11px;color:var(--muted);font-size:13px}
+  /* Ekran ladowania. Gosc po zeskanowaniu kodu czeka na odszyfrowanie (PBKDF2 z 310 000
+     iteracji to na telefonie ulamek sekundy do sekundy) — bez tego widzial pusta strone. */
+  #gvSplash{position:fixed;inset:0;z-index:60;background:var(--bg);
+            display:flex;align-items:center;justify-content:center;
+            animation:spIn .25s ease-out}
+  #gvSplash[hidden]{display:none}
+  #gvSplash.out{animation:spOut .35s ease-in forwards;pointer-events:none}
+  @keyframes spIn{from{opacity:0}to{opacity:1}}
+  @keyframes spOut{to{opacity:0}}
+  .sp-inner{text-align:center;padding:24px}
+  .sp-mono{font:300 46px/1.1 Georgia,"Times New Roman",serif;color:var(--accent);
+           letter-spacing:.06em;min-height:52px}
+  .sp-rings{position:relative;width:76px;height:38px;margin:18px auto 0}
+  .sp-rings span{position:absolute;top:0;width:34px;height:34px;border-radius:50%;
+                 border:2px solid var(--accent);opacity:.5}
+  .sp-rings span:first-child{left:0;animation:ringL 1.9s ease-in-out infinite}
+  .sp-rings span:last-child{right:0;animation:ringR 1.9s ease-in-out infinite}
+  @keyframes ringL{0%,100%{transform:translateX(0)}50%{transform:translateX(9px)}}
+  @keyframes ringR{0%,100%{transform:translateX(0)}50%{transform:translateX(-9px)}}
+  .sp-txt{margin:16px 0 0;color:var(--muted);font-size:14px}
+  @media (prefers-reduced-motion:reduce){
+    #gvSplash,.sp-rings span{animation:none}
+  }
+
   #gvSearchWrap{position:relative}
+  /* Natywny „x" pola `search` jest maly, a na iOS bywa go w ogole nie widac. Wlasny
+     przycisk jest jedynym wyjsciem z wybranej osoby, wiec musi byc widoczny. */
+  #gvSearch{padding-right:44px}
+  #gvSearch::-webkit-search-cancel-button{display:none}
+  #gvClear{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+           width:32px;height:32px;border-radius:50%;border:1px solid var(--line);
+           background:var(--panel);color:var(--muted);font-size:15px;line-height:1;
+           cursor:pointer;display:flex;align-items:center;justify-content:center}
+  #gvClear:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  #gvClear[hidden]{display:none}
+  /* Powrot do calego planu pokazuje sie DOPIERO po wyborze osoby: bez wyboru nie ma
+     dokad wracac, a przycisk „Cały plan" wisial na ekranie i tylko zabieral miejsce. */
+  #gvBackWrap{position:absolute;left:10px;top:10px;z-index:4}
+  #gvBackWrap[hidden]{display:none}
+  #gvBackAll{display:flex;align-items:center;gap:7px;border:1px solid var(--line);
+             background:var(--panel);border-radius:999px;padding:8px 15px 8px 12px;
+             cursor:pointer;font:inherit;font-size:14px;box-shadow:var(--shadow)}
+  #gvBackAll:hover{border-color:var(--accent);color:var(--accent)}
+  #gvBackAll .arr{font-size:17px;line-height:1}
   #gvResults{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--panel);
              border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
              max-height:250px;overflow:auto;z-index:5;display:none}
@@ -489,8 +532,26 @@
               dominant-baseline:central;fill:#8c6b4f;pointer-events:none;letter-spacing:.09em}
   .zone-g.selected .zone{stroke-width:5;stroke-dasharray:none}
   .handle{fill:#fff;stroke:#8c6b4f;stroke-width:2.5;cursor:nwse-resize}
-  .highlight{fill:none;stroke:#8c6b4f;stroke-width:8;pointer-events:none}
+  /* Ramka wokol calego stolu mrygala i przy stole 4-osobowym byla wielka wzgledem tresci,
+     wiec ruch przyciagal oko donikad. Stol dostaje spokojne, statyczne tlo (gosc szuka
+     najpierw stolu), a pulsuje samo krzeslo (potem szuka miejsca przy nim). */
+  /* Wyrozniamy BLAT stolu, a nie prostokat wokol niego: podpisy gosci wychodza poza obrys
+     krzesel, wiec kazda ramka na zewnatrz przecinala imie i nazwisko. Blat jest w srodku,
+     nic tam nie pisze poza nazwa stolu — kolizja jest niemozliwa. */
+  .table-g.wybrany .table-body{fill:#f6efe7;stroke:#8c6b4f;stroke-width:4}
+  .table-g.wybrany .table-label{fill:#8c6b4f}
   .seat.mine{fill:#8c6b4f;stroke:#5f472f;stroke-width:5}
+  .seat-halo{fill:none;stroke:#8c6b4f;stroke-width:6;pointer-events:none;
+             transform-box:fill-box;transform-origin:center}
+  @keyframes seatPulse{
+    0%   {opacity:.85; r:var(--r0)}
+    70%  {opacity:0;   r:var(--r1)}
+    100% {opacity:0;   r:var(--r1)}
+  }
+  .seat-halo.pulse{animation:seatPulse 1.6s ease-out infinite}
+  @media (prefers-reduced-motion:reduce){
+    .seat-halo.pulse{animation:none;opacity:.7}
+  }
   .seat.found{stroke:#8c6b4f;stroke-width:7}
   .seat.source{opacity:.45;stroke-dasharray:6 4}
   .seat-name.found{font-weight:700;fill:#8c6b4f}
@@ -670,6 +731,13 @@
 
 <!-- ============ WIDOK GOŚCIA ============ -->
 <div id="guestView">
+  <div id="gvSplash" hidden="">
+    <div class="sp-inner">
+      <div class="sp-mono" id="gvMono"></div>
+      <div class="sp-rings" aria-hidden="true"><span></span><span></span></div>
+      <p class="sp-txt" id="gvSplashTxt">Otwieramy plan sali…</p>
+    </div>
+  </div>
   <div id="gvPreviewBar" hidden="">
     <span>Podgląd — dokładnie to zobaczą goście po zeskanowaniu kodu.</span>
     <button class="btn sm" id="gvExit">Wróć do edycji</button>
@@ -687,6 +755,7 @@
     <div class="row" id="gvFind">
       <div id="gvSearchWrap" style="flex:1">
         <input type="search" id="gvSearch" placeholder="Wpisz swoje imię i nazwisko" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+        <button id="gvClear" type="button" hidden="" aria-label="Wyczyść i pokaż cały plan" title="Wyczyść i pokaż cały plan">✕</button>
         <div id="gvResults"></div>
       </div>
     </div>
@@ -702,9 +771,11 @@
       <div class="gvlHead"><span id="gvListTitle">Wszyscy goście</span></div>
       <div id="gvListBody"></div>
     </div>
-    <div class="float zoombar" style="right:10px;bottom:10px">
+    <div id="gvBackWrap" hidden="">
+      <button id="gvBackAll" data-gv="zoom-fit"><span class="arr">←</span>Cały plan</button>
+    </div>
+    <div class="float zoombar wide-only" style="right:10px;bottom:10px">
       <button class="btn" data-gv="zoom-out">−</button>
-      <button class="btn" data-gv="zoom-fit">Cały plan</button>
       <button class="btn" data-gv="zoom-in">+</button>
     </div>
   </div>
@@ -720,7 +791,7 @@
 <div id="modalWrap"><div id="modal"></div></div>
 <div id="printRoot"></div>
 <!-- Tu eksport wstawia zaszyfrowany plan. W pliku roboczym pozostaje pusty. -->
-<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"vnngPfIbmr1gubfM5uRXfA","iv":"xi_eJnUGG1rCi4mS","data":"zTwf_qPDJtnUXbnmwYLqv78RIZ2azYbQtd-iOW9TZl9IQbUOApZZahFTHN_ncGHjbM-ZYxm0pGGXk102XD1CLje3rDIy1ZE3aMHmfqC1E5pQUv-ayuqD3Peb-IBY7ZFAcjS2qR-qVvrEDkaEedSMo0oflP0881t3AfzMia9TZKE4wH8alyyTVSv5N71YRw4E2uPWvgyDta3gZTw_XmUkCOcPzPdoj4rn_gzh56kJBkHM1I8HjsfJNW0TTV2YIJPhFtX4zJGOT8O8DbF2RzFBw1WcVMP06btxUo9gn3A6ZMjQ6HTUHi9DQEy84q65GavFhKixxtTagEv0jK-Y3fqXxVTs1RqsGMrKg89O0ye6Qm55Cj_NcDLiFQUvfvovXdXThT7uJpp-vdImRBqG_6gOYM02l7ARDE0iTG4ToNd7CJG8vbKYnevmg-OndcUTPhtuSoxBesEYej_aCRXQ3yKcBFGklipL8QDa4SxTgMhuzIN7Z0fNH0bPB2GjXw5cNSSnIIHBqOwUAaAUCld2o8JMfLCdt4YBqSbqWvyKDufCIHPO2xlY_b3JZ85iw7EINj9hesWPVR0ih1ZrR94qmfkf4DDBpsLqNAGkBMT_Z4Rhu6MzrN7kaGcPomhQsvkQU-sDRZ1nWFrK_u0nCuC_m-eubQMcecpp36dJvGEElNFeP52Ypw5T2L8XpnZavKXyzh4FKSt_8W6l9Dk6Nw_w9QZzFlO_mVj0a1NaekbwoiRg_trDJ95USa4WB3Ha1DCO-aABOT7k27sOyQi4afllTT4XvbnApkiNQRnMuHFgzMSRJY0iXOZvlx0FR4bOC62RaSKNx5Pj902tiB8PCPsThUYUWiK-hYv28SC5rh3oHaJpKB-47kYjDaUbmB7Gm3f4wscvUDqOquLCgyXV-oRAPUy2ckA4AZuDN-vNorMA0S6d9fQlJH2FJQuOLe5JnqxxE58YHhDBmaBKIFhta9M0BLGp3ncWbHZmTpbGTY5mcxNBnh535twdgAkjDmPmfmR-boSIA-kX-L9PbmGrQc_stT3C7OLEJP2723bCeKTdrI_Pv5zVLbUfn76rgbVrk72qHQxqLIQAoLvNUpryV6QaPG7ajW5TU-8hyaXLHEhf7v2enzLAIz6FI_djCHDfpfck6IbsXehOiw9_JQ2qMZ7Gno3bj1BEXcNkL7UsGxAymzoFFSKO64BwgVw1oX8edRxAz8ad9Qf1yw3xM9T_n3a-PdcEsr8k602ATPYfnlaX7UiwW2DKVumuE3owmdTn3j1rfgOskJuZhUQjtBxcaePjh5HFgXjSq_grE8wVcTtjPBeVOuh5LOscGShZZlSJDCXhRpgU44wMD6EsjwGqOb3JqlrnkqyhgHaxKZ--AsL75uWw_TZqF5-p-D8xa3_tixi5LV7-JrpAeL0cBS6hkAP33ABPhxitA6o4RVUr5Po1H63gYv9BGiqRLlzBqLVkzrJmb6Uxs1-wy9ksD_EZMoU4JmnplCgeJUrtqEs4IUAsLDGEf6P8cDCwZwnNfEzw-wx1fqJDx5nMchaXIlUNKCLg0VRZegdb_ME6xV5QepPMU98M1DuApzVeF86Rp2qVsVaqh6fEOi6dwUJzlsgWSVrDSL7Z85e4f_PzIp1EFY6sVk0VmJp1YjwZB1E3GlNyOlQuytzJh-ebr6tP3Dbns7IVibRewZ45im-qLaVqXUdBPH7CMoRa_Bg80SvYPchGQRsGpsn8wwV_ON0mNdQXaTTmS3HpFTPoZTiGyZTORmYElNEL-sLXO1i-rGcSss6vjgzOtwFLqZJdIIv2lNj6jBuBV3u3kPR_x0LKlk1d33ti4wq85FznTmyttORIJFtNUw7MVdQfHGICuZ1L4JjLo9FYr5gmurFRdBQlcnIpQili43ype9aijLX2dRo6gHJHwrYDtlixJ_sNKVR9Q49PinPWSSssOa2pbFNsCYtoleqyTT0SwkS43H5f-mNm1S7nvz6_JeOOOuCG1Y0oCG2aRBHdvNNwLAG5EeRRPc019HVNHcm8LZnZIya4M1eUzYsKGjeF8MN7hneAq4lXorCsqi5aiQZjGGV9S1MemDTmRjyV-5CcGswOFSXY4SeSZOfqVEPcUnSGc1UcK4Bzmrm5fyxPHzWkXQIOSQhpQG6uLFZLY_6zes_zyuLh3dcD5Wfe7uR3YvbhyeUdn_cdwz1eKmI8idWmS8P2e4bO3ZHvqyC78-t-roqBx53O7oLW6aOwTLyK5H7St3MN_mw2yNR3f_SoP89HY4oe82g8bJGm9fqC2lrVwsRZpXX-tNUMlQhzeSedQ2Y2pzhiYeTRq8HzxGyRu3yuKICpNylG_7JpbMepHSKU1LekXIVLWIUqUzmPVylRGIY6eP7YIxmQQhXvuH4Xrl4fO30luwyIl5obqyD2NbZ-1dcuOY36K4N9XFjK6GGqGz-AM0An1uUGKn2_XhpKQNpzkqrRAnE7DDdiJmabxSyYLky7Oifh-ps2KEckfpbWGu2b4rFT3oKc5vWekJKvxqdmuqrVkFJ5JusgY3kgIr1YgIuV3kezUcgcXVzMoPxltbmLU_SBwTqmmOWAZqSYT0eIleQkDUjzbQZkT5fhwJeEgM04OlhomWkPLpJpuMkSmPDNEvcPt8nn9IV-XJrCLCJnFpOOXn242nscDbgqJp_YpiBtIIoOb30f5g_HTL_jyygsMR1MrjK7wJKTuJNYxsXEB1WTs6Lfq0sKk_kvbJLuQMkT06CdrFVrl_sR10rqsDpXMyRc_oxazYhMzOWhFJY1J8cUt1blvCyglZyx00Xgo7TsRtbtNlngU83IkxxAXWd-aLTRpkU3_2LeumPlXJFDAvYsgAdtwDMdwGoY7fb1Ns0AzB3D_Jf9_JiN4f1fvVA0Y1sJ5-jTWL_Pp5GGP_rs9irej4MHALvyG11g5a0_jICi3eHFRKYlQGL5eJCe0eZY"}</script>
+<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"cIUkWbeSDdGe50vtNmGCvg","iv":"lAiopHJrC5n6UVh9","data":"ETo1wvA4DA-KzntnkZd5dPPwteJVNmy2u_1TUcK0ud9vpwcJl1KiaYPAJ9DI1M8xGSVrRpTKAHJnb5D2q1k4qTttnyQphr4RukK4MsXNHoISNDe83FB7wGdyKKjm4i1BRvwuPJ0Z58-G5P9AFMbso8AY3URx-J1HBm-HFRiOd7cTLhVEstW9Ep9ZAEzWi_guS8elxa7y6d5GHmjbtJmfIXdCQI6Xp83ScH4tRqLjTSdQo_icizi3eSIL3CwWpCbsKKZSH79bGgG2S2MegsExPFyV3HSXOx52wButG9caAL0pYP1uo5xW0okePWJWorhzoJWAMKong9a1b6-iudn-vyvHqBABm4HebyblNMQPcc0NoPkVSX0ENznbw3pRMae2s_dGG8EFljMoipgT6Qzt9Y6sbSNo2gGA7weSD0m1zhhmV-qJm9Jf1s4pC1_BmisPTyWVaRq-lURmDgJ8kuei455WEeZQ2oSsSigqB6OTVkWBsnTOQAB2SdRoacC2q77RsxjKkyS5ZpZ1S6EafJPpFc0sKNJ6ccTGFNQZ7bcpUkRIoEjcoe6tz4DQnVRQNXwsNc61miwsDd5y7GyorSS6bTHYZ5ea8YCkQnXa6AKjUxR1b3Me3of_iOK0MEp3dcBW907_0BPy4LrN57Z29xw6XdPNKLWlYTso5sY2vwa3tOZ4d9NcjSpKm8yvAf5436jPeUl3d3rSS01QcP4Y1avrF88Xef6A-aMv3PN5WQlkmaGKNOR_SbNGtmvrwli3c1hGOYw6Ti5sfOW3x_9ZyrhjJVmMTPO3allXrVkUXJp0GY3c9TgtMRw2LzvrM1sCB1K57HYoQdXsNrQm6PxwavA7C5FdUilIBoEMw87mbk08PvAsNf0U8t4cs853pMOuviC2-X1Ra9mFU1IpHpdK0WPALpuUSO1ZQ0rBhOwJdFryysOL23HByznl3GwTDE70_jWUwpAjMJjnogmCJvAmO76hENDOnHJkiB1I6B2gxFSajq2r7fkqJXBAqp49UPAUimL26DNkAn179MIZs5OTRBq8JPl99b_d602CxFN1C5gRO9BmfD69gUupPErYi_XURnpNo1InhDVwIrXbhixV_X1K3qKPGNNRG-e6Nc80W-DkZmNkon7ghoQkOPiP87KxzjTJE1bJaqmo_Hn1rJqNRNunTH0lL-rX-imJxKFBf-JN9PzMdAVMQaVx8wa_WlDdqiPXUOtCOeT1nqHmt8hHxh60jrOGe5ztjPJCpGZg-KYhlkzDqWHH86m3JIDS0gadYxRL54DJbRBP5V41jnt3GN1EZFz8MLDJGQFTGZmrYhg8UcfyXSe53Qer8uyIvUEiU7M4gsiLVApD2-L02dfzuJU_Xhz-mEXmnOH0DIG1G3fDsJDj_0DFoRtFO0VYizBFvghtj2CqWCzQwFuEC_z_Js8jMZ7_lN4kZqsbIe4RF8yewdOjP6LeI78eAYT9zsKhU7nK-ESei0s9oF8LekiVuZQKEcNqFfUHyclDm20pIhIcLgvGXp79K5XVyRO1LB4nA3JGensZxOje8Fz9tz9a9wPuuh2rwlR6KCzMzXpaCzj41znIncabwuhJikVtiWb3XYQCVU-XBNzHtbsdKWhV9VKpuRwn23XdIaxF531S7Zr-KFeScm_rhmpvB_PdHjOl9i-hWT_-L9ANAIDqBuJwJ-ckC_5SBkkCXtWCUoIK4iAHtOGfqr2faiSdjKlELp1_LR56YifhNMWWQxnesbV0vHGjTrNd1lJvyRb2QjKxckvhIzBIMAHv69IwKPSL6Y6SrpAS6Iy8p2zuw54HowHTBWGEcdEGHlcAo4WJcroeoxE8DLpNRiqAodSzFjBVnzYMtnZwQj5PqMWtTcPPgadom75vfWkkaOFxeRIxo4m6WPPxkbCRkdP-bSg1LBxwpdnSp14y-b6OoTIvpa5tZwYVJUyLfXOOBHYbk3VVZ5W-mgePzPHzFvGKZHeWFu45z-iIzlf5giIKTZQdvc_fHgaRkS_OoK5ccXXsw4U3MMjk1dN8hHqY9gA-HpXIpIA3Hvs1nXf-Di1KbifBQPbJP4zB6ST2lGbKD1RLLaWxcA9ke07yiBydXxfJwFzuCVyZR_KDQDf6flOKIfJwLLZsMb03_mbP0a2N4_trkeJ6MwtdXCoKjYYeCQLJbRMJny2IeFvI-YXQECHZe5hpJnWj4tTuoXYvKgVXPZvlkjo1ZjW1hwFqaYA9zpes893hBWxKN5z0Q29lxr_uIs3UHbu1FwRLtFKsF446ZHTOwjN3fcTZcHLQKjYutb_9X3POX-UcyzApkTwUQG42-3mOUritt6HORU0IbVXnRv0rXdMJz4L3NsIr_77rM54V038SibM2oWvNGGNidiTo4fXLstE58K_rhpScb-TQ2ZB2h0levVhUAJI1kRkEYGs6AdNHd19bORa1c9lART9ic4ynf0rVgF4VBQwvLrMJZvttuMq-wJZO7wMkokxlf8Af6W6qxOqZnA3OvkNKGPpWpfmtXfW1ZlAl1-Bb7kEHDauTglriHHw_REpL2kX3hGUX-14c0qC3Pzh_SMfgTojX015OrHOomtpxHdciqJBL9aa5JXmD96QvOY44wLi9uBztJe-4qkpBC5P6OPU12a53VeXnolyDybxVP17u8KRYg39WeYOMoou6bJkSuyk-oGrb47kSEar8jlORs6Y0YGuvu5GyjOs9L-QqNNLCujWjvt_1_yMS8ggWQuRULspinKU61WmROVlGiY3SZy5rW4sW598wQSuuPeWLzf_XroRRJGg-fAcmWxWDnEIfbLf8EY6c-bdq7cyfJJrIgYkAxr1t6O0MxG_SOw8l0w2n-zMXayE64H23I-JAZu1X9biBZR-FhepzQBYzkx8IrHxnESPyjUGSZZIWRPDu6Ad_eWIUMj_Yxh7xVvHv8EJo9twg1-2lGuo1c40g3wM4"}</script>
 <input type="file" id="fileInput" accept="application/json,.json" hidden="">
 <input type="file" id="csvInput" accept=".csv,.txt,text/csv,text/plain" hidden="">
 
@@ -1072,7 +1143,7 @@ function emptyState() {
     version: MODEL_VERSION,
     meta: { name: "Nasze wesele", date: "", venue: { w: 2000, h: 1400 }, baseUrl: "", colorBy: "group",
             colors: { ...DEFAULT_COLORS }, modes: ["child", "diet", "rsvp"], legendOpen: null,   // null = rozwinięta na dużym ekranie, zwinięta na telefonie
-            protect: false, shareKey: "", accessCode: "" },
+            protect: false, shareKey: "", accessCode: "", monogram: "" },
     groups: DEFAULT_GROUPS.map(g => ({ ...g })),
     attrs: defaultAttrs(),
     guests: [], rules: [], tables: [], zones: [],
@@ -1959,8 +2030,12 @@ async function encryptWithCode(payload, code) {
   const key = await keyFromCode(code, salt, PBKDF2_ITER);
   const inner = new TextEncoder().encode(await encodeShare(payload));
   const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, inner);
+  // `mono` celowo NIE jest szyfrowany: ekran ladowania pokazuje go, ZANIM kod zadziala.
+  // Uzytkownik dostaje o tym ostrzezenie przy polu w Ustawieniach.
+  const mono = (state.meta.monogram || "").trim().slice(0, 12);
   return { enc: "PBKDF2-AES-GCM", v: 1, it: PBKDF2_ITER, salt,
-           iv: b64url.enc(iv), data: b64url.enc(new Uint8Array(ct)) };
+           iv: b64url.enc(iv), data: b64url.enc(new Uint8Array(ct)),
+           ...(mono ? { mono } : {}) };
 }
 
 async function decryptWithCode(file, code) {
@@ -2038,7 +2113,8 @@ let view = { x: -120, y: -120, w: 2240, h: 1640 };
 function renderScene(svg, s, opts = {}) {
   const { selection: sel = null, badSeats = new Set(), highlight = null,
           interactive = true, showNumbers = true, showNames = true, markSeat = null, colorBy = "group",
-          foundSeats = null, pxPerUnit = 1, namesOnlyTable = null, viewW = null, nameFont = null } = opts;
+          foundSeats = null, pxPerUnit = 1, namesOnlyTable = null, viewW = null, viewX = null,
+          nameFont = null } = opts;
   svg.replaceChildren();
 
   const defs = el("defs");
@@ -2062,8 +2138,14 @@ function renderScene(svg, s, opts = {}) {
 
   for (const z of s.zones) svg.append(zoneNode(z, sel, interactive));
   const roomMap = sideRoom(s.tables);
-  for (const t of s.tables) svg.append(tableNode(t, s, { sel, badSeats, highlight, interactive, showNumbers, showNames, markSeat, colorBy, foundSeats, viewW, nameFont,
-       pxPerUnit, namesOnlyTable, sideRoom: roomMap }));
+  const opcje = { sel, badSeats, highlight, interactive, showNumbers, showNames, markSeat, colorBy,
+                  foundSeats, viewW, viewX, nameFont, pxPerUnit, namesOnlyTable, sideRoom: roomMap };
+  // Jeden prog dla stolow tej samej wielkosci. Decyzja podejmowana osobno przy kazdym stole
+  // dawala mozaike: przy jednym stole pelne nazwiska, przy identycznym obok same numery,
+  // bo jedno dluzsze nazwisko przewazylo szale. Stoly o tej samej liczbie miejsc przelaczaja
+  // sie teraz razem — jednoczesnie, przy tym samym przyblizeniu.
+  opcje.wspolnyPoziom = poziomyWgWielkosci(s, opcje);
+  for (const t of s.tables) svg.append(tableNode(t, s, opcje));
 }
 
 /**
@@ -2147,14 +2229,13 @@ function tableNode(t, s, o) {
   const geo = tableGeom(t);
   // Jeden sposób zapisu na cały stół — liczony raz, nie przy każdym krześle.
   const nameLevel = o.showNames === "auto" && !(o.namesOnlyTable && t.id !== o.namesOnlyTable)
-    ? tableNameLevel(t, geo, o, s) : null;
+    ? (o.wspolnyPoziom && o.wspolnyPoziom.has(`${t.shape}:${t.seats}`)
+        ? o.wspolnyPoziom.get(`${t.shape}:${t.seats}`)
+        : tableNameLevel(t, geo, o, s))
+    : null;
   o = nameLevel == null ? o : { ...o, nameLevel };
 
-  if (o.highlight === t.id) {
-    const ext = tableExtent(t);
-    g.append(el("rect", { class: "highlight pulse", x: -ext.w / 2, y: -ext.h / 2,
-                          width: ext.w, height: ext.h, rx: 40 }));
-  }
+  if (o.highlight === t.id) g.classList.add("wybrany");
 
   const body = t.shape === "round"
     ? el("circle", { class: "table-body", r: geo.r, "data-tablebody": o.interactive ? t.id : null })
@@ -2190,6 +2271,14 @@ function tableNode(t, s, o) {
     if (guest && !mine) { c.style.fill = seatColor(guest, o.colorBy); c.style.fillOpacity = .92; }
     if (!o.interactive) c.style.cursor = "default";
     g.append(c);
+    if (mine) {
+      // Rozchodzaca sie fala zamiast migania caloscia: ruch jest kierunkowy, wiec oko
+      // trafia w srodek pierscienia, a nie tylko rejestruje, ze „cos tu mruga".
+      const halo = el("circle", { class: "seat-halo pulse", cx: p.x, cy: p.y, r: SEAT_R });
+      halo.style.setProperty("--r0", (SEAT_R + 2) + "px");
+      halo.style.setProperty("--r1", (SEAT_R * 2.6) + "px");
+      g.append(halo);
+    }
 
     if (t.locked && t.locked[i]) {
       const lk = el("text", { class: "seat-lock", x: p.x, y: p.y, transform: `rotate(${-t.rotation} ${p.x} ${p.y})` });
@@ -2330,16 +2419,73 @@ function sideRoom(tables) {
   return out;
 }
 
-function labelRoom(t, geo, anchor, size, viewW, room) {
-  // Podpis z boku ucieka na zewnątrz stołu i ma tam sporo miejsca — ale nie więcej,
-  // niż mieści ekran i nie więcej, niż zostało do sąsiedniego stołu.
-  if (anchor !== "middle") {
-    const doSasiada = !room ? Infinity : anchor === "start" ? room.prawo : room.lewo;
-    return Math.max(0, Math.min(size * 26, (viewW || Infinity) * 0.3, doSasiada));
+/**
+ * Odstep do krzesla SASIEDNIEGO W KOLEJNOSCI — to z nim podpis moze sie zderzyc, bo oba
+ * uciekaja na zewnatrz obok siebie. Wczesniej brane bylo minimum po WSZYSTKICH krzeslach
+ * tej samej strony i tylko w pionie: przy okraglym stole dwa krzesla na skraju luku leza
+ * blisko siebie w pionie, choc ich podpisy rozchodza sie promieniscie, wiec caly stol
+ * niepotrzebnie schodzil do numerow.
+ */
+/** Ile swiata zostaje od krzesla do brzegu kadru w strone, w ktora biegnie napis. */
+function doKrawedzi(t, p, anchor, size, o) {
+  if (o.viewW == null || o.viewX == null) return undefined;
+  const rad = ((t.rotation || 0) * Math.PI) / 180;
+  // Podpis nie zaczyna sie na krzesle, tylko jest odsuniety na zewnatrz — dokladnie tak,
+  // jak robi to `tableNode`. Liczenie od srodka krzesla dawalo o kilkanascie jednostek
+  // za duzo miejsca i najdalsze nazwiska wychodzily poza kadr.
+  const dir = (p.a * Math.PI) / 180;
+  const out = SEAT_R + (anchor === "middle" ? size * 1.25 : 11);
+  const lxLocal = p.x + Math.cos(dir) * out, lyLocal = p.y + Math.sin(dir) * out;
+  const x = t.x + lxLocal * Math.cos(rad) - lyLocal * Math.sin(rad);
+  const doLewej = x - o.viewX, doPrawej = o.viewX + o.viewW - x;
+  // Zapas jednej wysokosci pisma: szerokosc napisu szacujemy ze sredniej szerokosci znaku,
+  // a przy nazwiskach z samych szerokich liter szacunek potrafi sie mylic o kilka procent.
+  // Podpis wysrodkowany (krzeslo u szczytu stolu) rozchodzi sie w OBIE strony, wiec liczy
+  // sie blizsza krawedz razy dwa — inaczej wystawal poza ekran przy stole tuz przy brzegu.
+  if (anchor === "middle") return Math.max(0, 2 * (Math.min(doLewej, doPrawej) - size));
+  return Math.max(0, (anchor === "start" ? doPrawej : doLewej) - size);
+}
+
+function odstepPionowy(t, i, anchor) {
+  if (anchor === "middle") return Infinity;
+  const pts = seatPositions(t);
+  const p = pts[i];
+  if (!p) return Infinity;
+  const n = pts.length;
+  let d = Infinity;
+  for (const j of [(i - 1 + n) % n, (i + 1) % n]) {
+    const q = pts[j];
+    if (!q || j === i) continue;
+    if (Math.sign(q.x) !== Math.sign(p.x)) continue;     // sasiad zza rogu stolu
+    d = Math.min(d, Math.hypot(q.x - p.x, q.y - p.y));
   }
-  return t.shape === "round"
+  return d;
+}
+
+function labelRoom(t, geo, anchor, size, viewW, room, pion, doKrawedzi, jedenStol) {
+  // Podpis z boku ucieka na zewnątrz stołu i ma tam sporo miejsca w poziomie — ale
+  // wysokosc wiersza zajmuje przestrzen MIEDZY sasiednimi krzeslami tej samej strony.
+  // Stol obrocony do pionu ma wszystkie krzesla boczne i ciasno upakowane w pionie,
+  // wiec „26 znakow swobody" wpuszczalo nazwiska, ktore natychmiast na siebie wchodzily
+  // i rozciagaly sie na pol sali. Limit poziomy przycinamy proporcjonalnie do tego,
+  // ile pionu naprawde zostalo na jeden wiersz.
+  if (anchor !== "middle") {
+    // Odstep do sasiedniego stolu ma sens tylko wtedy, gdy sasiad TEZ pisze nazwiska.
+    // W widoku goscia po wybraniu osoby podpisy ma wylacznie jej stol, wiec pilnowanie
+    // dystansu do stolu bez podpisow zaciskalo kadr tak, ze nazwiska nie mieszcza sie
+    // przy ZADNYM przyblizeniu i zostawaly same numery.
+    const doSasiada = !room || jedenStol ? Infinity : anchor === "start" ? room.prawo : room.lewo;
+    if (pion !== undefined && pion < size * 1.05) return 0;   // nie ma nawet na jeden wiersz
+    // `doKrawedzi` to realna odleglosc od krzesla do brzegu widocznego kadru w strone,
+    // w ktora biegnie napis. Wczesniej stal tu ryczalt „30% szerokosci widoku", ktory przy
+    // stole blisko krawedzi wypuszczal nazwisko poza ekran, a przy stole na srodku
+    // niepotrzebnie je scinal.
+    return Math.max(0, Math.min(size * 26, doKrawedzi ?? Infinity, doSasiada));
+  }
+  const pitch = t.shape === "round"
     ? (2 * Math.PI * (geo.r + SEAT_GAP + SEAT_R + 20)) / Math.max(1, t.seats)
     : geo.len / Math.max(1, geo.top, geo.bot);
+  return Math.min(pitch, doKrawedzi ?? Infinity);
 }
 
 /**
@@ -2351,6 +2497,23 @@ function labelRoom(t, geo, anchor, size, viewW, room) {
  * któryś zmieści się dla wszystkich zajętych krzeseł przy tym stole — a gdy nie mieści
  * się nawet inicjał, cały stół dostaje numery.
  */
+/**
+ * Najostrzejszy (najwyzszy) poziom zapisu w kazdej grupie stolow o tej samej liczbie
+ * miejsc. Grupujemy po liczbie miejsc i ksztalcie, bo to one decyduja o ciasnocie —
+ * a jednoczesnie pojedynczy nietypowy stol nie blokuje podpisow na calym planie.
+ */
+function poziomyWgWielkosci(s, o) {
+  if (o.showNames !== "auto") return null;
+  const out = new Map();
+  for (const t of s.tables) {
+    if (o.namesOnlyTable && t.id !== o.namesOnlyTable) continue;
+    const klucz = `${t.shape}:${t.seats}`;
+    const lvl = tableNameLevel(t, tableGeom(t), o, s);
+    out.set(klucz, Math.max(out.get(klucz) ?? 0, lvl));
+  }
+  return out;
+}
+
 function tableNameLevel(t, geo, o, plan) {
   // Gości szukamy w planie przekazanym do rysowania, nie w globalnym `state`:
   // widok gościa rysuje `gvState`, więc `guestById` zwracałby tam same puste wyniki
@@ -2365,11 +2528,22 @@ function tableNameLevel(t, geo, o, plan) {
     if (!p) continue;
     const world = ((p.a + t.rotation) * Math.PI) / 180;
     const anchor = Math.cos(world) > 0.4 ? "start" : Math.cos(world) < -0.4 ? "end" : "middle";
-    const room = labelRoom(t, geo, anchor, size, o.viewW, o.sideRoom && o.sideRoom.get(t.id));
+    const room = labelRoom(t, geo, anchor, size, o.viewW, o.sideRoom && o.sideRoom.get(t.id),
+                           odstepPionowy(t, i, anchor), doKrawedzi(t, p, anchor, size, o),
+                           !!o.namesOnlyTable);
+    const pion = odstepPionowy(t, i, anchor);
+    if (window.__d4) window.__d4.push({ i, anchor, room: Math.round(room), pion: isFinite(pion)?Math.round(pion):'inf', size: Math.round(size), n: fullName(g) });
     const forms = nameForms(g);
     let fit = forms.length;                       // domyślnie: nic się nie mieści
-    for (let k = 0; k < forms.length; k++)
-      if (formWidth(forms[k]) * size * 0.52 <= room) { fit = k; break; }
+    for (let k = 0; k < forms.length; k++) {
+      // Wariant dwuwierszowy potrzebuje DWA RAZY tyle wysokosci co jednowierszowy. Bez tego
+      // przy stole na 14 osob nazwiska lamane na dwie linie wchodzily na siebie w pionie,
+      // a jedyna alternatywa byly numery. Teraz taki stol schodzi do samego imienia,
+      // ktore w jednym wierszu jeszcze sie miesci.
+      if (formWidth(forms[k]) * size * 0.52 > room) continue;
+      if (isFinite(pion) && pion < size * 1.15 * forms[k].length) continue;
+      fit = k; break;
+    }
     if (fit > level) level = fit;
     if (level >= forms.length) break;             // niżej już tylko numery
   }
@@ -2402,7 +2576,7 @@ function renderCanvas() {
   applyView(canvas, view);
   renderScene(canvas, state, {
     selection, badSeats: conflictSeats, colorBy: state.meta.colorBy, foundSeats,
-    showNames: "auto", showNumbers: true, viewW: view.w,
+    showNames: "auto", showNumbers: true, viewW: view.w, viewX: view.x,
     pxPerUnit: viewScale(canvas, view).s,
   });
   updateZoomLabel();
@@ -3076,9 +3250,85 @@ function clientToWorld(svg, v, cx, cy, rect) {
     y: (cy - r.top - (r.height - v.h * s) / 2) / s + v.y,
   };
 }
-const applyView = (svg, v) => svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+/** Jedyne miejsce, w ktorym `viewBox` jest ustawiany — wiec jedyne, w ktorym trzeba
+ *  pilnowac, ze liczby sa liczbami. Plan bez stolow i stref albo kanwa o zerowych
+ *  wymiarach potrafia dac NaN/Infinity, a taki `viewBox` gasi caly rysunek. */
+const applyView = (svg, v) => {
+  if (![v.x, v.y, v.w, v.h].every(Number.isFinite) || v.w <= 0 || v.h <= 0) return;
+  svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+};
+
+/* ————— plynne dojscie do nowego kadru —————
+ * Skok kadru gubi orientacje: po klikniecie w gościa plan po prostu „byl juz gdzie indziej"
+ * i trzeba bylo od nowa zgadnac, na co sie patrzy. Przejscie pokazuje DROGE.
+ * Gesty (szczypanie, przeciaganie) celowo NIE sa animowane — tam palec jest zegarem,
+ * a kazda animacja zamienia sie w gumowe opoznienie. */
+const animacjeWidoku = new WeakMap();
+
+function stopViewAnim(svg) {
+  const a = animacjeWidoku.get(svg);
+  if (a) { cancelAnimationFrame(a); animacjeWidoku.delete(svg); }
+}
+
+/** Animuje `v` do `cel`. `onFrame` dostaje kazda klatke, `onDone` — koniec. */
+function animateView(svg, v, cel, { ms = 320, onFrame, onDone } = {}) {
+  stopViewAnim(svg);
+  // Cel policzony z degeneracyjnego planu bywa nieskonczony — wtedy nie ma czego animowac.
+  if (![cel.x, cel.y, cel.w, cel.h].every(Number.isFinite) || cel.w <= 0 || cel.h <= 0) {
+    onFrame && onFrame(); onDone && onDone();
+    return;
+  }
+  const skok = Math.abs(cel.w - v.w) / Math.max(v.w, cel.w, 1)
+             + Math.abs(cel.x - v.x) / Math.max(v.w, 1)
+             + Math.abs(cel.y - v.y) / Math.max(v.h, 1);
+  const zredukowany = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (zredukowany || skok < 0.004) {                 // ruch niewidoczny goly okiem
+    Object.assign(v, cel); applyView(svg, v);
+    onFrame && onFrame(); onDone && onDone();
+    return;
+  }
+  const od = { x: v.x, y: v.y, w: v.w, h: v.h };
+  const t0 = performance.now();
+  // Skala zmienia sie GEOMETRYCZNIE (log), nie liniowo. Interpolacja liniowa szerokosci
+  // daje ruch, ktory na poczatku szarpie, a na koncu pelznie.
+  const k = Math.log(cel.w / od.w);
+  const ease = u => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+  let klatka = 0;
+  const krok = now => {
+    const u = Math.min(1, (now - t0) / ms), e = ease(u);
+    const skala = Math.exp(k * e);
+    v.w = od.w * skala; v.h = od.h * skala;
+    v.x = od.x + (cel.x - od.x) * e;
+    v.y = od.y + (cel.y - od.y) * e;
+    applyView(svg, v);
+    onFrame && onFrame();
+    // Podpisy zaleza od przyblizenia, wiec w trakcie dojazdu tez musza sie przeliczac —
+    // inaczej nazwiska „wskakuja" dopiero na koncu. Co trzecia klatka wystarcza dla oka
+    // i zostawia zapas mocy na telefonie.
+    if (onDone && u < 1 && ++klatka % 3 === 0) onDone();
+    if (u < 1) animacjeWidoku.set(svg, requestAnimationFrame(krok));
+    else {
+      animacjeWidoku.delete(svg);
+      Object.assign(v, cel); applyView(svg, v);
+      // Przerysowanie DOPIERO w nastepnej klatce. Karta z miejscem zmienia wysokosc kanwy,
+      // a `pxPerUnit` liczy sie z jej rozmiaru — mierzone w tej samej klatce wychodzilo
+      // sprzed przeliczenia ukladu i podpisy zostawaly na poziomie „same numery".
+      onDone && requestAnimationFrame(() => onDone());
+    }
+  };
+  animacjeWidoku.set(svg, requestAnimationFrame(krok));
+}
+
+/** Kadr po przybliżeniu o `factor` wokół środka — bez ruszania `v`. */
+function zoomTarget(svg, v, factor) {
+  const gora = Math.max(20000, v.w);
+  const nw = clamp(v.w * factor, 250, gora), k = nw / v.w;
+  const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+  return { w: nw, h: v.h * k, x: cx - nw / 2, y: cy - (v.h * k) / 2 };
+}
 
 function zoomAt(svg, v, cx, cy, factor) {
+  stopViewAnim(svg);             // kolko myszy i szczypanie przerywaja plynne dojscie
   const p = clientToWorld(svg, v, cx, cy);
   // Kanwa o zerowych wymiarach (panel jeszcze schowany, karta w trakcie animacji) daje
   // NaN, ktore wchodzilo prosto do `viewBox` i gasilo caly widok. Lepiej nie zrobic nic.
@@ -3652,6 +3902,11 @@ function openSettings() {
     <h3>Ustawienia</h3>
     <div class="field"><label>Nazwa wydarzenia</label><input type="text" id="st-name"></div>
     <div class="field"><label>Data</label><input type="text" id="st-date" placeholder="np. 12 września 2026"></div>
+    <div class="field"><label>Monogram na ekranie powitalnym</label>
+      <input type="text" id="st-mono" maxlength="12" placeholder="np. N&amp;M">
+      <p class="note">Pokazuje się gościom w chwili otwierania planu, <b>zanim wpiszą kod</b> —
+         więc jest zapisany jawnie i zobaczy go każdy, kto otworzy link. Zostaw puste,
+         jeśli wolisz, żeby przed odblokowaniem nie było widać nic o Was.</p></div>
     <div class="field"><label>Wymiary sali (cm)</label><div class="row">
       <input type="number" id="st-w" step="50" min="300"><input type="number" id="st-h" step="50" min="300"></div></div>
     <h3 style="margin-top:20px">Grupy gości</h3>
@@ -3675,6 +3930,7 @@ function openSettings() {
 
     $("#st-name").value = state.meta.name || "";
     $("#st-date").value = state.meta.date || "";
+    $("#st-mono").value = state.meta.monogram || "";
     $("#st-w").value = state.meta.venue.w;
     $("#st-h").value = state.meta.venue.h;
 
@@ -3684,17 +3940,20 @@ function openSettings() {
     const commit = () => {
       const przed = JSON.stringify(state.meta);
       const meta = { name: $("#st-name").value, date: $("#st-date").value,
+                     mono: $("#st-mono").value.trim().slice(0, 12),
                      w: clamp(+$("#st-w").value || 2000, 300, 20000),
                      h: clamp(+$("#st-h").value || 1400, 300, 20000) };
       if (meta.name === state.meta.name && meta.date === state.meta.date
+          && meta.mono === (state.meta.monogram || "")
           && meta.w === state.meta.venue.w && meta.h === state.meta.venue.h) return;
       snapshot();
       state.meta.name = meta.name; state.meta.date = meta.date;
+      state.meta.monogram = meta.mono;
       state.meta.venue.w = meta.w; state.meta.venue.h = meta.h;
       if (JSON.stringify(state.meta) === przed) discardSnapshot();
       render();
     };
-    ["#st-name", "#st-date", "#st-w", "#st-h"].forEach(s => $(s).onchange = commit);
+    ["#st-name", "#st-date", "#st-mono", "#st-w", "#st-h"].forEach(s => $(s).onchange = commit);
 
     const drawGroups = () => {
       const box = $("#st-groups");
@@ -4178,7 +4437,8 @@ function exportNameFont() {
     for (const id of t.assign) {
       const g = guestById(id);
       if (!g) continue;
-      const forms = nameForms(g);
+      if (window.__d3) window.__d3.push({ i, anchor, room: Math.round(room), kraw: doKrawedzi(t, p, anchor, size, o), vx:o.viewX, vw:o.viewW, size:Math.round(size) });
+    const forms = nameForms(g);
       const szer = formWidth(forms[1] || forms[0] || [""]);  // wariant złamany po spacji
       if (szer > 0) font = Math.min(font, pitch / (szer * 0.52));
     }
@@ -5501,17 +5761,17 @@ const actions = {
   "undo": undo,
   "redo": redo,
   "autoseat": openAutoSeat,
-  "zoom-in":  () => { zoomCenter(canvas, view, 1 / 1.3); renderCanvas(); },
-  "zoom-out": () => { zoomCenter(canvas, view, 1.3); renderCanvas(); },
+  "zoom-in":  () => animateView(canvas, view, zoomTarget(canvas, view, 1 / 1.3), { onFrame: updateZoomLabel, onDone: renderCanvas }),
+  "zoom-out": () => animateView(canvas, view, zoomTarget(canvas, view, 1.3), { onFrame: updateZoomLabel, onDone: renderCanvas }),
   // „Dopasuj" mieszczacy sam prostokat sali potrafil zostawic stol poza kadrem: stoly
   // wolno przeciagac poza sale, a w panelu nie ma spisu stolow, wiec taki stol dalo sie
   // odnalezc juz tylko slepym przesuwaniem mapy. Kadrujemy TRESC, nie sale.
   "zoom-fit": () => {
     const B = exportBox(140);
-    fitView(canvas, view, { w: B.w, h: B.h }, 0);
-    view.x += B.x; view.y += B.y;
-    applyView(canvas, view);
-    renderCanvas();
+    const cel = { ...view };
+    fitView(canvas, cel, { w: B.w, h: B.h }, 0);
+    cel.x += B.x; cel.y += B.y;
+    animateView(canvas, view, cel, { onFrame: updateZoomLabel, onDone: renderCanvas });
   },
   "toggle-filters": () => setFilterPop($("#filterPop").hidden),
   "toggle-left":  () => togglePanel("#left"),
@@ -5841,7 +6101,7 @@ let gvMine = null;
  * rozjeżdżają — dokładamy trochę przybliżenia ponad „zmieść wszystko”. Sufit 1,4× jest
  * kompromisem: plan robi się wyraźnie większy, a wciąż widać jego zdecydowaną większość.
  */
-function fitGuestView() {
+function fitGuestView(plynnie = false) {
   const s = gvState;
   if (!s) return;
   let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
@@ -5879,10 +6139,9 @@ function fitGuestView() {
   const k = 1;
   w /= k; h /= k;
 
-  gvView.x = cx - w / 2;
-  gvView.y = cy - h / 2;
-  gvView.w = w; gvView.h = h;
-  applyView(gvCanvas, gvView);
+  const cel = { x: cx - w / 2, y: cy - h / 2, w, h };
+  if (plynnie) animateView(gvCanvas, gvView, cel, { onDone: gvRender });
+  else { Object.assign(gvView, cel); applyView(gvCanvas, gvView); }
 }
 
 function gvRender() {
@@ -5892,7 +6151,7 @@ function gvRender() {
     showNumbers: true, showNames: "auto",
     namesOnlyTable: gvHighlight || "\u0000",   // brak wyboru → sama numeracja
     pxPerUnit: viewScale(gvCanvas, gvView).s,
-    viewW: gvView.w,
+    viewW: gvView.w, viewX: gvView.x,
   });
 }
 
@@ -5915,6 +6174,42 @@ function gvZoomSpan(t, maxExt) {
   return clamp(Math.min(maxExt * base, wanted), maxExt * 1.2, maxExt * 2.4);
 }
 
+/**
+ * Kadr wybrany dla stolu ma sens tylko wtedy, gdy przy krzeslach WIDAC NAZWISKA — po to
+ * gosc go otwiera. Sam wzor na rozstaw krzesel tego nie gwarantuje: dlugie polskie
+ * nazwiska przy stole na 10 osob nie mieszcza sie na telefonie i caly stol schodzil
+ * wtedy do numerow, ktore niczego gosciowi nie mowia. Dociskamy wiec kadr, dopoki
+ * nazwiska sie nie pojawia — ale nie ciasniej niz sam stol z krzeslami.
+ */
+function gvSpanZNazwiskami(t, span, maxExt, r, ar) {
+  const geo = tableGeom(t);
+  const podloga = maxExt * 1.05;      // ciasniej stol zaczyna byc obcinany
+  const probuj = s => {
+    const w = ar >= 1 ? s * ar : s, h = w / ar;
+    const px = Math.min((r.width || 1) / w, (r.height || 1) / h);
+    return tableNameLevel(t, geo, {
+      showNames: "auto", namesOnlyTable: t.id, pxPerUnit: px,
+      viewW: w, viewX: t.x - w / 2, sideRoom: sideRoom(gvState.tables),
+    }, gvState);
+  };
+  // Dwa ograniczenia ciagna w PRZECIWNE strony, wiec szukac trzeba w obie:
+  //   • podpis z boku konkuruje z krawedzia ekranu — pomaga ODDALENIE (stol malenie,
+  //     robi sie miejsca po bokach), bo napis ma staly rozmiar w pikselach;
+  //   • podpis nad krzeslem konkuruje z rozstawem krzesel, ktory jest staly w swiecie —
+  //     pomaga ZBLIZENIE, bo napis maleje w skali planu.
+  // Stol okragly zwykle blokuje sie na pierwszym, prostokatny na drugim. Skanowanie tylko
+  // w jedna strone zostawialo prostokatne stoly z samymi numerami przy kazdym przyblizeniu.
+  const brakNazwisk = 4;                    // tyle wynosi poziom „same numery"
+  const kandydaci = [];
+  for (let s = podloga; s <= maxExt * 3.4; s *= 1.07) kandydaci.push(s);
+  const pasujace = kandydaci.filter(s => probuj(s) < brakNazwisk);
+  if (!pasujace.length) return span;
+  // Kadr naturalny (`span`) niesie juz sensowna zaleznosc od liczby miejsc — im wiecej
+  // krzesel, tym ciasniej. Odchodzimy od niego tylko o tyle, o ile trzeba, zeby nazwiska
+  // sie zmiescily: z pasujacych bierzemy ten NAJBLIZSZY naturalnemu.
+  return pasujace.reduce((a, b) => (Math.abs(b - span) < Math.abs(a - span) ? b : a));
+}
+
 function gvSeatOf(guestId) {
   for (const t of gvState.tables) {
     const i = t.assign.indexOf(guestId);
@@ -5923,12 +6218,21 @@ function gvSeatOf(guestId) {
   return null;
 }
 
+/** Widocznosc „x" i strzalki powrotu ma JEDNO zrodlo prawdy: czy cokolwiek jest wybrane
+ *  albo wpisane. Wczesniej te stany rozjezdzaly sie miedzy sciezkami wyboru. */
+function gvOdswiezKontrolki() {
+  const pole = $("#gvSearch"), x = $("#gvClear"), powrot = $("#gvBackWrap");
+  if (!pole || !x || !powrot) return;
+  x.hidden = !(pole.value.trim() || gvHighlight);
+  powrot.hidden = !gvHighlight;
+}
+
 function gvSelect(guest) {
   const at = gvSeatOf(guest.id);
   $("#gvResults").classList.remove("show");
   $("#gvSearch").value = fullName(guest);
   if (!at) {
-    gvHighlight = null; gvMine = null; gvRender();
+    gvHighlight = null; gvMine = null; gvRender(); gvOdswiezKontrolki();
     $("#gvCard").classList.add("show");
     $("#gvName").textContent = fullName(guest);
     $("#gvSeat").textContent = "Nie znaleźliśmy przypisanego miejsca.";
@@ -5939,24 +6243,11 @@ function gvSelect(guest) {
   gvHighlight = t.id;
   gvMine = { tableId: t.id, index: at.index };
   gvSetTab("mine");
+  gvOdswiezKontrolki();
 
   // Przybliżenie dobieramy tak, żeby na krzesła starczyło miejsca na imiona.
   // Przy dużym stole rozstaw krzeseł jest ciaśniejszy, więc stały mnożnik zostawiał
   // widok, w którym widać już tylko numery.
-  // Karta z miejscem zjada dol kanwy, wiec proporcje trzeba mierzyc, GDY JUZ JEST na
-  // ekranie. Wczesniej pierwszy wybor liczyl kadr dla pelnej wysokosci i wychodzil
-  // o 15–25% za maly — a to wlasnie ten pierwszy widok dostaje kazdy gosc.
-  $("#gvCard").classList.add("show");
-  const ext = tableExtent(t);
-  const span = gvZoomSpan(t, Math.max(ext.w, ext.h));
-  const r = gvCanvas.getBoundingClientRect();
-  const ar = (r.width || 1) / (r.height || 1);
-  gvView.w = ar >= 1 ? span * ar : span;
-  gvView.h = gvView.w / ar;
-  gvView.x = t.x - gvView.w / 2;
-  gvView.y = t.y - gvView.h / 2;
-  gvRender();
-
   const nameAt = i => {
     const g = gvState.guests.find(x => x.id === t.assign[((i % n) + n) % n]);
     return g ? fullName(g) : null;
@@ -5976,6 +6267,22 @@ function gvSelect(guest) {
   $("#gvMates").innerHTML = left || right
     ? `<b>Obok Ciebie:</b> ${esc([left, right].filter(Boolean).join(", "))}`
     : `<span style="color:var(--muted)">Sąsiednie miejsca są jeszcze wolne.</span>`;
+
+  // Kadr liczymy DOPIERO teraz. Karta z miejscem zabiera dol kanwy, a jej wysokosc zalezy
+  // od tresci, ktora wlasnie wpisalismy — mierzenie wczesniej dawalo proporcje pustej karty
+  // i kadr rozjezdzal sie o kilkanascie procent. To wlasnie ten kadr decyduje, czy przy
+  // krzeslach zmieszcza sie nazwiska, czy zostana same numery.
+  const ext = tableExtent(t);
+  const r = gvCanvas.getBoundingClientRect();
+  const ar = (r.width || 1) / (r.height || 1);
+  const maxExt = Math.max(ext.w, ext.h);
+  const span = gvSpanZNazwiskami(t, gvZoomSpan(t, maxExt), maxExt, r, ar);
+  const cw = ar >= 1 ? span * ar : span, ch = cw / ar;
+  // Plynne dojscie zamiast skoku: gosc widzi, DOKAD plan sie przesunal, wiec nie musi
+  // od nowa szukac punktu odniesienia w sali.
+  gvRender();
+  animateView(gvCanvas, gvView, { w: cw, h: ch, x: t.x - cw / 2, y: t.y - ch / 2 },
+              { onDone: gvRender });
 }
 
 let gvListMode = "az";           // "az" = alfabetycznie, "table" = numerowana wg stołów
@@ -6019,7 +6326,17 @@ function gvBuildList() {
 
 /** Zakładki: „mine" pokazuje mapę, pozostałe listę w danym porządku. */
 let gvTab = "mine";
+/**
+ * Obie listy rysuja sie w tym samym `#gvListBody`, wiec `scrollTop` przechodzil miedzy
+ * zakladkami: przewinieta lista alfabetyczna otwierala „Wg stolow" gdzies w srodku, a przy
+ * krotszej liscie przegladarka dociskala pozycje z powrotem — wygladalo to jak wspolny,
+ * szarpiacy sie scroll. Kazda zakladka pamieta swoja pozycje.
+ */
+const gvScroll = { az: 0, table: 0 };
+
 function gvSetTab(tab) {
+  const body = $("#gvListBody");
+  if (gvTab === "az" || gvTab === "table") gvScroll[gvTab] = body.scrollTop;
   gvTab = tab;
   $$("#gvTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
   const list = $("#gvList");
@@ -6028,6 +6345,8 @@ function gvSetTab(tab) {
   $("#gvListTitle").textContent = tab === "az" ? "Wszyscy goście — alfabetycznie" : "Goście wg stołów";
   if (gvState) gvBuildList();
   list.hidden = false;
+  // Po `hidden = false`, bo do ukrytego elementu przegladarka nie zapisze scrollTop.
+  body.scrollTop = gvScroll[tab] || 0;
 }
 function gvToggleList(show) { gvSetTab(show === false ? "mine" : gvTab === "mine" ? "az" : "mine"); }
 
@@ -6096,13 +6415,13 @@ function initGuestView() {
     const g = first && gvState.guests.find(x => x.id === first);
     if (g) return gvSelect(g);
     gvHighlight = t.id;
+    gvOdswiezKontrolki();
     const ext = tableExtent(t), span = gvZoomSpan(t, Math.max(ext.w, ext.h));
     const r = gvCanvas.getBoundingClientRect(), ar = (r.width || 1) / (r.height || 1);
-    gvView.w = ar >= 1 ? span * ar : span;
-    gvView.h = gvView.w / ar;
-    gvView.x = t.x - gvView.w / 2;
-    gvView.y = t.y - gvView.h / 2;
-      gvRender();
+    const cw = ar >= 1 ? span * ar : span, ch = cw / ar;
+    gvRender();
+    animateView(gvCanvas, gvView, { w: cw, h: ch, x: t.x - cw / 2, y: t.y - ch / 2 },
+                { onDone: gvRender });
   });
 
   $("#gvTabs").addEventListener("click", e => {
@@ -6116,8 +6435,9 @@ function initGuestView() {
     gvHighlight = null; gvMine = null;
     $("#gvCard").classList.remove("show");
     $("#gvResults").classList.remove("show");
-    fitGuestView();
+    gvOdswiezKontrolki();
     gvRender();
+    fitGuestView(true);
   };
 
   // Klasa „searching" chowa tytuł i podpowiedź na telefonie — od chwili, gdy gość
@@ -6125,12 +6445,18 @@ function initGuestView() {
   const markSearching = () => $("#guestView").classList.add("searching");
   $("#gvSearch").addEventListener("input", e => {
     markSearching();
+    gvOdswiezKontrolki();
     // Krzyżyk w polu wyszukiwania czyści je do pustego — wtedy wracamy do całej sali,
     // dokładnie tak jak po kliknięciu „Cały plan".
     if (!$("#gvSearch").value.trim()) return gvShowAll();
     gvSearchInput(e);
   });
   $("#gvSearch").addEventListener("search", () => { if (!$("#gvSearch").value.trim()) gvShowAll(); });
+  $("#gvClear").addEventListener("click", () => {
+    $("#gvSearch").value = "";
+    gvShowAll();
+    $("#gvSearch").focus();
+  });
   $("#gvSearch").addEventListener("keydown", e => { if (e.key === "Escape") gvShowAll(); });
   $("#gvSearch").addEventListener("focus", e => { markSearching(); gvSearchInput(e); });
   $("#gvSearch").addEventListener("keydown", e => {
@@ -6150,6 +6476,7 @@ function initGuestView() {
     if (gvPinch.isPinching()) { gvDrag = null; return; }
     try { gvCanvas.setPointerCapture(e.pointerId); } catch (_) {}
     const p = clientToWorld(gvCanvas, gvView, e.clientX, e.clientY);
+    stopViewAnim(gvCanvas);        // palec jest wazniejszy niz trwajaca animacja
     gvDrag = { id: e.pointerId, x: p.x, y: p.y, view: { ...gvView } };
   });
   gvCanvas.addEventListener("pointermove", e => {
@@ -6177,8 +6504,10 @@ function initGuestView() {
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-gv]");
     if (!b || !gvState) return;
-    if (b.dataset.gv === "zoom-in")  { zoomCenter(gvCanvas, gvView, 1 / 1.3); gvRender(); }
-    if (b.dataset.gv === "zoom-out") { zoomCenter(gvCanvas, gvView, 1.3); gvRender(); }
+    if (b.dataset.gv === "zoom-in")
+      animateView(gvCanvas, gvView, zoomTarget(gvCanvas, gvView, 1 / 1.3), { onDone: gvRender });
+    if (b.dataset.gv === "zoom-out")
+      animateView(gvCanvas, gvView, zoomTarget(gvCanvas, gvView, 1.3), { onDone: gvRender });
     if (b.dataset.gv === "zoom-fit") {
       gvShowAll();
     }
@@ -6198,6 +6527,7 @@ function showGuestView(payload, preview = false) {
   $("#gvResults").classList.remove("show");
   $("#gvCard").classList.remove("show");
   gvSetTab("mine");
+  gvOdswiezKontrolki();
   $("#gvPreviewBar").hidden = !preview;
   $("#gvLock").hidden = true;
   $("#gvFind").hidden = false;
@@ -6219,6 +6549,7 @@ function exitPreview() {
 }
 
 function showGuestError(msg) {
+  ukryjSplash();
   initGuestView();
   $("#app").style.display = "none";
   $("#guestView").classList.add("show");
@@ -6229,10 +6560,36 @@ function showGuestError(msg) {
 
 /** Tryb gościa z adresu: dane z fragmentu (#d=) albo plan.json, ewentualnie zaszyfrowany. */
 /** Odblokowanie planu wbudowanego w stronę — kodem z adresu albo wpisanym ręcznie. */
+/* ————— ekran ladowania —————
+ * Odszyfrowanie kodem to PBKDF2 z 310 000 iteracji: na telefonie ulamek sekundy do sekundy.
+ * Bez tego ekranu gosc po zeskanowaniu kodu QR patrzyl w pusta strone i nie wiedzial,
+ * czy cokolwiek sie dzieje. */
+let splashDo = 0;
+function pokazSplash(mono) {
+  const box = $("#gvSplash");
+  if (!box) return;
+  $("#gvMono").textContent = (mono || "").trim().slice(0, 12);
+  box.classList.remove("out");
+  box.hidden = false;
+  splashDo = performance.now() + 550;      // minimalny czas, zeby nie mrugnal i nie zniknal
+}
+function ukryjSplash() {
+  const box = $("#gvSplash");
+  if (!box || box.hidden) return;
+  const zwloka = Math.max(0, splashDo - performance.now());
+  setTimeout(() => {
+    box.classList.add("out");
+    setTimeout(() => { box.hidden = true; box.classList.remove("out"); }, 360);
+  }, zwloka);
+}
+
 function askForCode(file, prefill) {
   const lock = $("#gvLock"), input = $("#gvCode"), err = $("#gvCodeErr");
   $("#gvFind").hidden = true;
-  lock.hidden = false;
+  // Ekran z polem na kod pokazujemy DOPIERO, gdy kod jest naprawde potrzebny. Gosc, ktory
+  // zeskanowal kod QR, ma go juz w adresie — pokazywanie mu pola, ktore i tak zaraz samo
+  // sie wypelni, to ekran, na ktorym nie ma nic do zrobienia.
+  lock.hidden = !!prefill;
   $("#gvSub").textContent = "Ten plan jest zabezpieczony. Wpisz kod z zaproszenia.";
 
   const attempt = async () => {
@@ -6257,7 +6614,12 @@ function askForCode(file, prefill) {
       lock.hidden = true;
       $("#gvFind").hidden = false;
       showGuestView(payload, false);
+      ukryjSplash();
     } catch (e) {
+      // Kod z adresu nie zadzialal — dopiero TERAZ pokazujemy pole, bo dopiero teraz
+      // jest w nim coś do zrobienia.
+      ukryjSplash();
+      lock.hidden = false;
       err.textContent = "Ten kod nie pasuje do tego planu. Sprawdź go jeszcze raz.";
     } finally {
       $("#gvCodeGo").disabled = false;
@@ -6269,8 +6631,8 @@ function askForCode(file, prefill) {
   input.onkeydown = e => { if (e.key === "Enter") attempt(); };
   input.oninput = () => { err.textContent = ""; };
 
-  if (prefill) { input.value = formatCode(prefill); attempt(); }
-  else input.focus();
+  if (prefill) { input.value = formatCode(prefill); pokazSplash(file.mono); attempt(); }
+  else { ukryjSplash(); input.focus(); }
 }
 
 async function bootGuestMode() {
@@ -6280,6 +6642,11 @@ async function bootGuestMode() {
 
   const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
   const inline = hash.get("d"), key = hash.get("k"), code = hash.get("c");
+
+  // Monogram bierzemy z JAWNEGO pola pliku — plan jest jeszcze zaszyfrowany, wiec nazwy
+  // wydarzenia w tej chwili nie znamy i znac nie mozemy.
+  const wbudowany = embeddedPlan();
+  pokazSplash((wbudowany && wbudowany.mono) || "");
 
   // 1. Cały plan zakodowany w adresie ma pierwszeństwo. Wariant A celuje w ten sam
   // opublikowany `index.html`, który nosi już własny szyfrogram — sprawdzanie planu
@@ -6291,7 +6658,7 @@ async function bootGuestMode() {
   }
 
   // 2. Plan wbudowany w tę stronę — nic nie trzeba dociągać z sieci.
-  const embedded = payload ? null : embeddedPlan();
+  const embedded = payload ? null : wbudowany;
   if (embedded) {
     if (!cryptoReady())
       return showGuestError("Ta przeglądarka nie potrafi odszyfrować planu. Spróbuj w innej.");
@@ -6323,8 +6690,9 @@ async function bootGuestMode() {
     }
   }
 
-  if (!payload) return showGuestError(problem || "Nie udało się wczytać planu. Poproś o aktualny link lub kod QR.");
+  if (!payload) { ukryjSplash(); return showGuestError(problem || "Nie udało się wczytać planu. Poproś o aktualny link lub kod QR."); }
   showGuestView(payload, false);
+  ukryjSplash();
 }
 
 /* ================================= START ================================= */
