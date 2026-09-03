@@ -5,6 +5,22 @@
 <meta name="theme-color" content="#f6f5f2">
 <title>Plan sali weselnej</title>
 
+<script>
+/* Tryb gościa musi być znany PRZED pierwszym malowaniem strony. Bez tego przeglądarka
+   zdążyła narysować planer (górny pasek, panele, pustą salę), a dopiero potem JavaScript
+   go chował — gość po zeskanowaniu kodu QR widział mignięcie cudzego edytora.
+   Ten skrypt jest maleńki i stoi przed CSS-em celowo: ustawia atrybut, a resztę robią
+   zwykłe reguły stylów, więc nie ma ani jednej klatki ze złym ekranem. */
+(function () {
+  try {
+    var h = location.hash || "", q = location.search || "";
+    if (document.documentElement.dataset.mode === "guest") return;
+    if (q.indexOf("v=g") !== -1 || /(^|[#&])(d|c|k)=/.test(h))
+      document.documentElement.dataset.mode = "guest";
+  } catch (e) { /* w najgorszym razie zostaje stare zachowanie */ }
+})();
+</script>
+
 <!-- ===== style aplikacji ===== -->
 <style>
   :root{
@@ -330,6 +346,11 @@
   /* ---------- widok gościa ---------- */
   #guestView{display:none;flex-direction:column;height:100%}
   #guestView.show{display:flex}
+  /* Pierwsza klatka w trybie gościa: planera nie ma w ogóle, jest ekran ładowania.
+     Wszystko sterowane atrybutem na <html>, więc obowiązuje zanim ruszy jakikolwiek skrypt. */
+  html[data-mode="guest"] #app{display:none !important}
+  html[data-mode="guest"] #guestView{display:flex}
+  html[data-mode="guest"] #gvSplash{display:flex}
   #gvPreviewBar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;
                 background:var(--accent);color:#fff;padding:8px 14px;font-size:13px}
   #gvPreviewBar[hidden]{display:none}
@@ -348,12 +369,13 @@
   #gvHead p{margin:0 0 11px;color:var(--muted);font-size:13px}
   /* Ekran ladowania. Gosc po zeskanowaniu kodu czeka na odszyfrowanie (PBKDF2 z 310 000
      iteracji to na telefonie ulamek sekundy do sekundy) — bez tego widzial pusta strone. */
+  /* Domyslnie ekranu ladowania nie ma. W trybie goscia jest od PIERWSZEJ KLATKI (regula
+     nizej), wiec nie miga, nie wjezdza animacja i nie zaslania niczego po fakcie —
+     po prostu jest tym, co gosc widzi jako pierwsze. Znika przez `gone`. */
   #gvSplash{position:fixed;inset:0;z-index:60;background:var(--bg);
-            display:flex;align-items:center;justify-content:center;
-            animation:spIn .25s ease-out}
-  #gvSplash[hidden]{display:none}
-  #gvSplash.out{animation:spOut .35s ease-in forwards;pointer-events:none}
-  @keyframes spIn{from{opacity:0}to{opacity:1}}
+            display:none;align-items:center;justify-content:center}
+  #gvSplash.out{animation:spOut .45s ease-in forwards;pointer-events:none}
+  #gvSplash.gone{display:none !important}
   @keyframes spOut{to{opacity:0}}
   .sp-inner{text-align:center;padding:24px}
   .sp-mono{font:300 46px/1.1 Georgia,"Times New Roman",serif;color:var(--accent);
@@ -731,7 +753,7 @@
 
 <!-- ============ WIDOK GOŚCIA ============ -->
 <div id="guestView">
-  <div id="gvSplash" hidden="">
+  <div id="gvSplash">
     <div class="sp-inner">
       <div class="sp-mono" id="gvMono"></div>
       <div class="sp-rings" aria-hidden="true"><span></span><span></span></div>
@@ -791,7 +813,7 @@
 <div id="modalWrap"><div id="modal"></div></div>
 <div id="printRoot"></div>
 <!-- Tu eksport wstawia zaszyfrowany plan. W pliku roboczym pozostaje pusty. -->
-<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"cIUkWbeSDdGe50vtNmGCvg","iv":"lAiopHJrC5n6UVh9","data":"ETo1wvA4DA-KzntnkZd5dPPwteJVNmy2u_1TUcK0ud9vpwcJl1KiaYPAJ9DI1M8xGSVrRpTKAHJnb5D2q1k4qTttnyQphr4RukK4MsXNHoISNDe83FB7wGdyKKjm4i1BRvwuPJ0Z58-G5P9AFMbso8AY3URx-J1HBm-HFRiOd7cTLhVEstW9Ep9ZAEzWi_guS8elxa7y6d5GHmjbtJmfIXdCQI6Xp83ScH4tRqLjTSdQo_icizi3eSIL3CwWpCbsKKZSH79bGgG2S2MegsExPFyV3HSXOx52wButG9caAL0pYP1uo5xW0okePWJWorhzoJWAMKong9a1b6-iudn-vyvHqBABm4HebyblNMQPcc0NoPkVSX0ENznbw3pRMae2s_dGG8EFljMoipgT6Qzt9Y6sbSNo2gGA7weSD0m1zhhmV-qJm9Jf1s4pC1_BmisPTyWVaRq-lURmDgJ8kuei455WEeZQ2oSsSigqB6OTVkWBsnTOQAB2SdRoacC2q77RsxjKkyS5ZpZ1S6EafJPpFc0sKNJ6ccTGFNQZ7bcpUkRIoEjcoe6tz4DQnVRQNXwsNc61miwsDd5y7GyorSS6bTHYZ5ea8YCkQnXa6AKjUxR1b3Me3of_iOK0MEp3dcBW907_0BPy4LrN57Z29xw6XdPNKLWlYTso5sY2vwa3tOZ4d9NcjSpKm8yvAf5436jPeUl3d3rSS01QcP4Y1avrF88Xef6A-aMv3PN5WQlkmaGKNOR_SbNGtmvrwli3c1hGOYw6Ti5sfOW3x_9ZyrhjJVmMTPO3allXrVkUXJp0GY3c9TgtMRw2LzvrM1sCB1K57HYoQdXsNrQm6PxwavA7C5FdUilIBoEMw87mbk08PvAsNf0U8t4cs853pMOuviC2-X1Ra9mFU1IpHpdK0WPALpuUSO1ZQ0rBhOwJdFryysOL23HByznl3GwTDE70_jWUwpAjMJjnogmCJvAmO76hENDOnHJkiB1I6B2gxFSajq2r7fkqJXBAqp49UPAUimL26DNkAn179MIZs5OTRBq8JPl99b_d602CxFN1C5gRO9BmfD69gUupPErYi_XURnpNo1InhDVwIrXbhixV_X1K3qKPGNNRG-e6Nc80W-DkZmNkon7ghoQkOPiP87KxzjTJE1bJaqmo_Hn1rJqNRNunTH0lL-rX-imJxKFBf-JN9PzMdAVMQaVx8wa_WlDdqiPXUOtCOeT1nqHmt8hHxh60jrOGe5ztjPJCpGZg-KYhlkzDqWHH86m3JIDS0gadYxRL54DJbRBP5V41jnt3GN1EZFz8MLDJGQFTGZmrYhg8UcfyXSe53Qer8uyIvUEiU7M4gsiLVApD2-L02dfzuJU_Xhz-mEXmnOH0DIG1G3fDsJDj_0DFoRtFO0VYizBFvghtj2CqWCzQwFuEC_z_Js8jMZ7_lN4kZqsbIe4RF8yewdOjP6LeI78eAYT9zsKhU7nK-ESei0s9oF8LekiVuZQKEcNqFfUHyclDm20pIhIcLgvGXp79K5XVyRO1LB4nA3JGensZxOje8Fz9tz9a9wPuuh2rwlR6KCzMzXpaCzj41znIncabwuhJikVtiWb3XYQCVU-XBNzHtbsdKWhV9VKpuRwn23XdIaxF531S7Zr-KFeScm_rhmpvB_PdHjOl9i-hWT_-L9ANAIDqBuJwJ-ckC_5SBkkCXtWCUoIK4iAHtOGfqr2faiSdjKlELp1_LR56YifhNMWWQxnesbV0vHGjTrNd1lJvyRb2QjKxckvhIzBIMAHv69IwKPSL6Y6SrpAS6Iy8p2zuw54HowHTBWGEcdEGHlcAo4WJcroeoxE8DLpNRiqAodSzFjBVnzYMtnZwQj5PqMWtTcPPgadom75vfWkkaOFxeRIxo4m6WPPxkbCRkdP-bSg1LBxwpdnSp14y-b6OoTIvpa5tZwYVJUyLfXOOBHYbk3VVZ5W-mgePzPHzFvGKZHeWFu45z-iIzlf5giIKTZQdvc_fHgaRkS_OoK5ccXXsw4U3MMjk1dN8hHqY9gA-HpXIpIA3Hvs1nXf-Di1KbifBQPbJP4zB6ST2lGbKD1RLLaWxcA9ke07yiBydXxfJwFzuCVyZR_KDQDf6flOKIfJwLLZsMb03_mbP0a2N4_trkeJ6MwtdXCoKjYYeCQLJbRMJny2IeFvI-YXQECHZe5hpJnWj4tTuoXYvKgVXPZvlkjo1ZjW1hwFqaYA9zpes893hBWxKN5z0Q29lxr_uIs3UHbu1FwRLtFKsF446ZHTOwjN3fcTZcHLQKjYutb_9X3POX-UcyzApkTwUQG42-3mOUritt6HORU0IbVXnRv0rXdMJz4L3NsIr_77rM54V038SibM2oWvNGGNidiTo4fXLstE58K_rhpScb-TQ2ZB2h0levVhUAJI1kRkEYGs6AdNHd19bORa1c9lART9ic4ynf0rVgF4VBQwvLrMJZvttuMq-wJZO7wMkokxlf8Af6W6qxOqZnA3OvkNKGPpWpfmtXfW1ZlAl1-Bb7kEHDauTglriHHw_REpL2kX3hGUX-14c0qC3Pzh_SMfgTojX015OrHOomtpxHdciqJBL9aa5JXmD96QvOY44wLi9uBztJe-4qkpBC5P6OPU12a53VeXnolyDybxVP17u8KRYg39WeYOMoou6bJkSuyk-oGrb47kSEar8jlORs6Y0YGuvu5GyjOs9L-QqNNLCujWjvt_1_yMS8ggWQuRULspinKU61WmROVlGiY3SZy5rW4sW598wQSuuPeWLzf_XroRRJGg-fAcmWxWDnEIfbLf8EY6c-bdq7cyfJJrIgYkAxr1t6O0MxG_SOw8l0w2n-zMXayE64H23I-JAZu1X9biBZR-FhepzQBYzkx8IrHxnESPyjUGSZZIWRPDu6Ad_eWIUMj_Yxh7xVvHv8EJo9twg1-2lGuo1c40g3wM4"}</script>
+<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"GOJ3TffaxVV0zbnhVyMMNg","iv":"yPE94aJqO_qzcIq1","data":"_QbFAykRFRdfT-YSMR2sMw_vBTxMwwxs2xlmfI08IXcKsXX88FrUWClNFsYfxcwehcuMqup9KZ8tsoLocPnF0hd2MNIgfQ3AzWa0pNGM7LUni-8gVnTZzNTWdDKIB2TE9q8Zwhbd_5KlVut8X7-Vlw3TWkm4-ZVhbMIZPaHKMhngjCGDhBpgPu_fz-enTU8cqD1DYZCrdUuCwjB9PR7wLStcyCNt3QcBPnwtrCDPRNDiRIC_JsF_jp2E2Zp91KyNkqh9srAGHjPVafueEdyTbtmOzlxdKa-2TBgDAFBhRlNol32M0CP_8V795Gdlzci_DrglGJ8o-aZv7mzXhvg41RCAgjPuX_ddPFFtqyTk6Ch59Oi1zn4p23kMpytMsncxBBB_wuVxmybv2XFc6phjd1KXPNFbXIiyZS0hceOZbpKqYMIpkab5xlUlBsAcVnBnLC4Ysmxww773Nt9kSPoXuostPizHQ5RqaURe_7KWktpCWZFXDUeKqw3BdMJ75FQQXYyo8IwZ210CwmJYjNi4-2h7owJnDPZ-LkniaCTrYi96AGUzM9pAa9sHknRIuSNKImE7M_M2XVmuPKE-H3SbXqiwbX4Z-HGrH37x-Z_-t54g_cm1KLDE_c_KT5R8YbUSEqeDmphxebF4gBaA24ai-9FqBeiAnAsQgcVtDVsMDztimCQmjYH-lgZ1-XFSj1lFZNXmHlRXgaZawUM6e8f_CICihdifm_g2o-IFTY6bWIwT6wSJN8om6MkSjCLEZFcGrIN2lhrcwX4fR7XHmh3d5b5_4KMFIm20xXywQjyEMEechy3HdX5XBMZVPyDj7cvtzilFx_o5ev9mYs1T0ZCrETJsDmuudaMjaEnwnJV9qgDb52QhAhFTM5YI3vtY2WBUJmNDN8VuDpvp9wQsAu-zxLbaNlIPDhRhinq8LAN1y-34cWlLF5KuwrKdgQQL2Wg6Fw4tR3RiNboVfE7IVh5jUOkCTPdTtQqFsw8IXkBP8OeJx6W1ihmCe8Oer3IWS26ESI4OOTWBF8Kd0mpqSYBRUOCqZOjJKoRwT9Bi3K7vxFaXIrs2gHpaTs4-bFpXi9RFRr1uq4pobIF0ndPdL7U7Xaz-9XURqwKof7d9q1BOdAlRXt6dJa6Bqc2D6_-GOtLf9RpNv61VVBLtr2ZfluEmeOi5s9FMasl6wKezCoNSzkI6lqLidhKaijt_dBYxDbdLyuPV9prWdlLqj0u4_nChPegU71D5DQzcxjTsYilCd3_2rsy-wGBnum4kY-hAsINma1vjFJSERWSHlztor7gbohTr-n9wH5NKzGUVYaQesZeygfhWq4GtaKOxgDNSW8Dfl082TCy8ZwNbc1iklWK21P6QPl3yTAZaWUh1BPWCV0vwvrTtSnK2aisp1hGB9r1L3FzY_YJJgXNXcMo-O-x00jNlslqgMEvToKh4hAEhf0_qVCJWzrNGbB0j2kdO2Li0XmTcnjk1NSaKe2Fif_qz6c3hPW3U295yHz1aJ77VIGW5GVlVuigHXGs1gv7R07jxL2Jw2GZmBIoRCXMgStdItueLv1-OntklVl9WSty5BF0IefBMjy_yHpOO-pPpGlmRPCH_aM9adzBM31fEqmHeO4aCrbuddu580w3nmj3HNotsP5kVqdMP474YuiLrLJqUrs7CkucFZgU4835qJsSBFAVH7EM4x00M6x2WNE9WN5N6S1BXWhpIzv96WibbAeJFpcxEdFzTAaIKPaZnjmKGiBCmVfo-IWMz95j-bULf_EzsPeZKE-5dl3inCt2oizMbq_qwVzY--QTwKYyQPZBBgjw-fcDofA4pSCHLNaZulJ9F9vxkIk_F19cR5bJg6DeyNNHVzabVaJdJyx50EQkcCURT9TZgM6Rgq6AF-uUSNrwUrTpBfSGrQj2g5PmacQ4kHbVGgLF08I182XB1480i84NDOp5qnMKoB-EX4Up_XoD6MZBuaOa7r4anX574CpVTNqnqwDrsS0lLkO3A5VEKNZcAwvYaEAqsxfdYQcLGLLMXgOmulHcA2Ja_YcIpnrDFSAl8o8btmjFFW0lTuo5FrNGICvfq65D6YT9-r6RB8eRth4kb-Y0D1nRd51UMZ3SdJN9iFhhiEZo1O7RSubhyeEmjum6eXv2mP0QqsV1fC43HzOOkynvpALHoQ_XtiHKWszWsbtvQzbjXnkJ-odLQRbEqd-VMDqnHTFzzaVSio8dZwxha9mP7uPubIT5Gjpqyr7wWczSnZDqSVP1TUtaoekSwEKQYntukl1ctPHTStkpx-w7n0-R4mJKLXKBpyG8bxu0xY_jBd6zcvv0_dqP8ZQhJF5U8vhiArRfsOGVkMnP8MlKOcrnE7o6vwOjnSabgXUhYNTUPNpXVXi_zOJ_K-mBpZQDASB49r28JjC2xcqC8PLHVLWSWCTKjA0PsgbeHH_TSPtqwFN5Ud5_93jR62M1ZbEOrfmxIu6K8hcRHtIwS_CyqRp4MFVrk_js4nvjBGPJLW1AiufKWVUfz4xGmY1lGqD7dGYGc3iRcf2R83EwiB0glKjZKTRXHrgvifPWATV60-B_VGGRRbpStxciQ2EtBdMNXwxVcdQB39T9guGaQAX4S-5tFruNSiY1N1BKVbkOxkGV-36RNZvXOigcGRcbABxvonKkWImGySFnTkB9BggtdYRmgEdPFf6sFY2xNqJL1-EIDvmxVnYHObhStTUbVHWb9xfDR1frfs1HKn6CxyRPzGS_w8PnJsho8WmILjK878owKZGqhDBUza6_7ip84uRx3QIMQJ1gTNT9FoMXJ3kTIPmG-CkUOSPN6nthSMFHnKswRuhCrMNdl5YA-ad2ZZkxtGqpjam6OJxb_xgtrHuAR80CkUheOFsrj8Xx1hX0AXBETrxhiCBI-RJZE4Ez1gva85WdjQrs4E5sb00t8basOlxOs13IxVTwt"}</script>
 <input type="file" id="fileInput" accept="application/json,.json" hidden="">
 <input type="file" id="csvInput" accept=".csv,.txt,text/csv,text/plain" hidden="">
 
@@ -6565,21 +6587,28 @@ function showGuestError(msg) {
  * Bez tego ekranu gosc po zeskanowaniu kodu QR patrzyl w pusta strone i nie wiedzial,
  * czy cokolwiek sie dzieje. */
 let splashDo = 0;
+const splashWidoczny = () => {
+  const box = $("#gvSplash");
+  return !!box && !box.classList.contains("gone")
+      && document.documentElement.dataset.mode === "guest";
+};
 function pokazSplash(mono) {
   const box = $("#gvSplash");
   if (!box) return;
+  // Atrybut jest juz ustawiony przez skrypt z <head>; tu tylko dla sciezek, ktore
+  // wchodza w tryb goscia pozniej (np. plan.json wykryty dopiero po pobraniu).
+  document.documentElement.dataset.mode = "guest";
   $("#gvMono").textContent = (mono || "").trim().slice(0, 12);
-  box.classList.remove("out");
-  box.hidden = false;
-  splashDo = performance.now() + 550;      // minimalny czas, zeby nie mrugnal i nie zniknal
+  box.classList.remove("out", "gone");
+  splashDo = performance.now() + 500;      // zeby ekran nie mrugnal i nie zniknal
 }
 function ukryjSplash() {
   const box = $("#gvSplash");
-  if (!box || box.hidden) return;
+  if (!box || box.classList.contains("gone")) return;
   const zwloka = Math.max(0, splashDo - performance.now());
   setTimeout(() => {
     box.classList.add("out");
-    setTimeout(() => { box.hidden = true; box.classList.remove("out"); }, 360);
+    setTimeout(() => { box.classList.add("gone"); box.classList.remove("out"); }, 470);
   }, zwloka);
 }
 
