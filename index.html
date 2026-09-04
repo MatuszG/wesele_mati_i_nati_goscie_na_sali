@@ -432,6 +432,12 @@
                       border-bottom:1px solid var(--line);background:#faf9f7}
   #gvCanvasWrap{flex:1;position:relative;min-height:0;overflow:hidden}
   #gvCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;background:var(--bg)}
+  /* `touch-action` z <svg> NIE schodzi pewnie na jego dzieci: elementy SVG nie tworza
+     zwyklych pudelek CSS i przegladarka na Androidzie potrafi uznac gest zaczety na stole
+     albo na plycie sali za swoj — szczypanie nie robilo wtedy nic. Poza obrysem sali celem
+     dotkniecia jest samo <svg>, wiec tam gest dzialal; dokladnie to zglosil Mateusz.
+     Regula musi wiec objac wszystko, co jest w srodku planu. */
+  svg#canvas *,#gvCanvas *{touch-action:none}
   #gvList{position:absolute;inset:0;background:var(--panel);z-index:6;display:flex;flex-direction:column}
   #gvList[hidden]{display:none}   /* selektor id bije domyslne [hidden]{display:none} */
   #gvList .gvlHead{display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -850,7 +856,7 @@
 <div id="modalWrap"><div id="modal"></div></div>
 <div id="printRoot"></div>
 <!-- Tu eksport wstawia zaszyfrowany plan. W pliku roboczym pozostaje pusty. -->
-<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"cRGo2zlg8pCdAns7D6BUUg","iv":"IKPHg1TfkYZfqVoe","data":"mi14fS-6JkUSeJoBYDgucCaTvaM5moYZqME6mluVvCZJG61tKLpgAo7CYMFWcs6kVeGRg8hUh2AMtixHjdPQCfvkkeleUyIay1bQYv9MqbyDid7mExxndhNmYRx1LAtUw54RmR5qv2JdI-d9SzcJsE96cUjmBB81GpFX--8VzYmXhcg9fMYnBXLueBxuE4bzk8LAWajDtA2E44sSBalRFFGPyAIXGw8G4oy_Gh2-nNeLimFtVHihjYsmFW96iF_-Xa3HwdysMD9ok6eDlL3xcKM_cARz5uNyKWToKtFqGcwukFWQvJLpJpEinE5NZ0sf6xPfENtFVNL63epT_BrcczKXNdVcf4RxomvhynDxQKS4XaAQjUZfXwEispoV16RHoY4jlWDmLKc_OIbz6JaJ_vPfOVnPWjsqHvMH7kAUtBd_TwbAaLL03nAOCdCZrfsTxx0nceHqP7ie3G0Lv9kgVtr6xw1-W3v57yX_FTYSMwdagrB8LswkjAqd2aostmkEomszMqYCXjQUuTSBV9dSqAX9wg71gwMxlKjBN44IGUHMtk7E021bpPtdhaCZmjlr2U8aTxDLe6tSYu9ymCa9JD6RynNPe_1iQXJjbPtMb8Jh4R8QJDtepjdxleT3DBn4Cho9DGnsuJWb5VQWFbeFdNygw9Zq3UlX2IEbjXrdRiUaOBGdtWkhhbXVbfdVQ58fNnpCg39A2b95lO5ZhKvYNEjFj5KDVew99AI3Padl4BtjYGtZ4eqNlBC9TxMg5nIp4C16Fc5W_TXmRYVzSqt9_Vi20ztOLKX3KLGDpHf0pl0Z9zeg0eQsIpoOxDzsY1REV88mCdXJ5c4UDmUOTORMSQEicvkoWDLCl3kvznyZLZllDPj1y9LiiNdE2kgYXQxYypJRPhSwfqdekgFh_AfvDwnhZ2ILHCgGJvMUq7klE0ESRllBJpU_ruB1fFQgmRfWHHMyvtontHit35qfLPqaWJVbGW_iUUINzPNce06V8TgzWQ-H6dPleNKZfdircNAE0_wHoJMGK47miWmhy2mElL2Pe1Qi_sGGL2Ok0poOtCP9vwZJzjuo2xu4b1tYlbPLwM8aFZ_5oYXbpV6zP-cff01t1ybhsyJmHTqjV8JNXub0pz4YXobVGNypEbi_Xm71PD6x8mS_nvYRjpY7pvj2fKlC9MtgmHwyNleN_Zfc8IBHjF3Dyxqih-u4n-GUlAYcTOFk_61ffIRBJVTJz2PKoNrMruZU38nC5PtMzm2M5LV0z5dvqr-fTsWzmWMzczBl1rlj4ERIEbPUjYhuCg-0eex6fQVubS3ibiThAVyB7gcd9-U7s0s2alOP_SuMXG2hiyN-cWkXWs8y357lQ5j56hWsA_cR1xYZsUjFb5X1obagiL4JDM-tF6FA2es5IGsYRccnZ1i2_LCfSy1JLDQl4o1XK8FDCGGtU_hFVcSEjlYw-ZPITI9dBthclmO84rJBgg5vOtSELrcH24_vr-VSMtlH7R9iZWgAkmc3MrbsC4uVJ5CHrLhHstbHSbONbrlvu-iFgQWedzBTLGfkqejQfuUWahIAe7o5aU1eG_M_uQw-qWfLJpn6OK5OdYQ0cPy-WnQS72J0SeVaXHzi0GxKN_eDg5ETAyw9LbN1H-x8J5ooGVgHRww6U_xxqCmz2fkvfZ3kXgAXETRMDRQkLdPeffYtz_FDCSXBCcxMbVSLzc9TpEemehhnG4W7IUw_6_QBxix25vOWVzTpJMxz9-tUCdghntW7aWRbtvMT7VWusGV9V77z7M47KtcCX_FC7j2AkCcnc9q98BzWi45rMHZMQwJGmzrPU66_2l0-rS5TVq0KA3QZuk5xFUBgLYNChibfzrIQi0wjmXRyJQFc792mRBKRDwTh9TC3IN2OT_OiNpmkXDUMJChKxL8vNDB5UMh5RyDCzCIhRD1x3cUTdZ3555bM7UG-toI4SHUReRwTNf_KGwpN1q-jpf4YkLLvY_6lBlB1rHMpYMPuZsbABRt0UzF5Ov9brhHYtH1vM_qyZbUtFh4PN7lt9b26XET7GG2IwIt5GTKf0eENqpw_uxP1YWgz32Kv65zXynSbsvrNWU5evbCoiq-vLBSVlvIs3dkStMuIlL9A3PsPHvyVc3EbBO8EKmPLJpkdsQlW2mzEg43qlzQF--e_-h71BdyxRBlslrKLLlMePHcuNxbioMBhcXf5Fri-xJru7QulkKKGDkCL8FzQMaRQ6ZxxU8yjIE_265bOLXt4FIt_Hm6ld85Yph_vweolyKiG2QCgc6v85llJ84OrUu6i6x6CH5CKqNGi7aPoyc9ElZE5DB7GJbJNtxTKfB_eXYdUfvpi_svxh4ljDfXD5fQTWXHjNNUPZhGtS1fWxERLYwaxSx0YFD7JJ_X4WF6eqjb0YAPVMekWIcWF8bqYCbnCt80KlulcxtNBwzpYJgfzX1RwGV6XZJyBCJ0E_6iYhFZ2ROHKbWPSK_fJ8RMQWpHN0VHWFaP4OiPi7xqXztVN5W4VsWzjZn9utBZW_n2dlSBg7iTzUzATFFHu6C3esNOJErnOcYUgWyfg_rWjjiE2XHEPzZWkN16WOZzpIK_YdSTt0V-OH9_d0ITWwhg2vvD1GCoHLIezO359KQ5JdLI7CeVHJSxv-QbpS8ZozDcuW_w9b3g_6zP681w1c50qeiyUUhT8VQV6iCi3YxEtyK-8qO38HmAFJBG4LnO3A3ccahkma0lupQr5wim_hQyc0wVXspXXljvAaQpj-zOasKq5ugrKQw79V8xI-dt5Az5VxUK3aesq1ESo-dl09Wl2NGtvkOLd7KN1ncLNjcUERPwlTXbeOQ4rXQ-pGWts_6bexwsqTNSNDFnyVisMTGt5mMCXowcHgK-l2Q48iw95hBeSDEkm9STjz3TYHaFP2e0wkdoa5SLrX81MGBqxWRcoMhtv"}</script>
+<script id="planData" type="application/json">{"enc":"PBKDF2-AES-GCM","v":1,"it":310000,"salt":"ZkJBPKi0FEHvcdJCqzt3Bw","iv":"DbmJg7fbaCnyeg2L","data":"ZPhUFlmqIndoj_UCAkoAvY6DwclAkvviNwCK9ApfLY7LWgl78PfHqHegSuKAxnCa2xrjxCErb2ycHobMnQVuknIsHF2KMxOk_JQH4sce3ZSN6Gx-slDFD3BN6t60_OtIHTHQRj6lZxDFl5pJNhvXtYHLz263ZbhoGCdo8FQfmQPm9NLXfvqVHA-Wx4d2aX0ofyiZ33_TOwAXtMj65v-U3Lfev0qT9FRhXMVrZ5R8UBKF2Se7Ni-YtviRRsqxJceD1W1J_igJu9UmiEWUy4L97zjVluLadXxCnGSxfGHu9IvsoLFPo9VsHfCeq74oPFRPqexlJartkxj0k-V-cwbBN6VJV-MnOXfo64McQ7j83ff49BfubKAMdyT5ktzXmlBP7oDzCwP5WYzxpv9QVYUhkiZ1vdADExOW1_wyW16YyY2RNhI78nEywLwzDGIS4nE7VmPboLHEWwEcdemSVmEKQ1OMpXlSaN8K3nzhnR5x8A0_-NDofodGridpImYdTCE9IoDM2UVeeHg62gyg-IGHue18aS56xD9uCb73ZlR-m4sy62ypb7MUFzjEpvujKZ4qUMpCtK4hppCs32mTef909zj3243VFP_zxyNAoWFcjAKxL889ftLAq-ncicfZPnf4CcOCL3siG1IebPN9H2-HtcjBz4y_IkV6Pxph9_Yv6VPP1hsNB8IW4LJKLwLGoiBvhXWX2tmBXaoA6_iY3lNBm2n3NX0W_TJxmDeZ0oxfDb0BZ9CLDQ3h5HNLfyMTnoVm_GgoS1ewJq3E0N2RzSkUWKAq99VT4UcUNYP-n5n7PrUtLqxr4jGH1pWmvJkz7uZFdacWkzf5AkbYXTfoLA3_1PsB0JHQDtZ71xb1MtTi-hJTQVMhSWaPPPFFX1VdpRKHGDyI0dkykm7pQoNjO75F3iW6Gqip3phRoaxwnm0auLeDcEZSMLLk70fFbRAHbgvMBUQtBC9X6oZV9RwqdTOOvNRGUfPpCcTVUod8ngc14W-h0F3JFfwF-QT5zFVMMQB8q2DTNoxYaL11dICcVFhPwdF456bvUBprUy_WFGEAdia1HNsDmZRjnp0jPfLMLSPaJQUX0esrOHKLQ3a8J5GUdHOirJMk9dwcE4lgMd7G1wi2Tt5sGj85ym5Zr06-EMRxPLRLsfbHbVgAVWLUWfaH6z6qRX7Fg6ZiTFXVbbbomIp5zsaun_UJ6QQKugOqhKqb2jcLWgaEGfY0xN-otOdLAJKdKDlmhHpeBEytOGwcOKamoQ2bRvHlp0IROALZ-d6S08DF6GKJ5d569VllMkuIta2z9Kx_9LwGOF7rF5rPErpmCEfXlLuU0kal202MNBN23Qh_UbZ4v6ogIOb1J-IlVK5WufwAvBK-mYmeJGuqKw6Fh7uNJRV7bJhVOdmWjH3X_YeAosaMoJRo24KVvICH9sXoVMctljwqfuYATsC17EpuvbRy-q-AXmuNrgsdIBXC1dhSSKZuMmG9j2Ac_96Op-UsLYd6aqaXslIgj-EnsToA2lA1SdffmnzFiK7hbrfWYdvE5gtaI85YicxY4xmhe3x2764aUI4icrtiYIxxzc6OJX5OpiIWKDKfOgE-BFB3U6obxgBIgReJJfNTCujo84BVjDL_Zewd-lD3AMG4q7pbkACzjxPnuVYXetpOnngn77BLXKEokP1c7KvV2eSA1WEl72KoshQat2AXuOIevt8Pdol5YccsPYEozMeSs591w54Jy8F6xcI7iqi0GaZKJDNegOQTZ5bU4EC0WK4Z3Fna1Kk5isTQQIzRx9tJsf6l5GxN-k5Cpr2-_2G5wcXdyzJP5bjTAHz_J2G8oxDexRzJ65H8zCz-qYkfjMriuo8RNgZDp4jc8Cr6j14xxtSyoqGjAxBHy1UjXUDSzmqCW4rB6lZgrO4Z22n-La8BTlVTVAKpYs_DMOskRfIdkNMyl0BL6MdBzuHPu4mzCMYM2kc5rrwy4WkbVCFxsH-K3eZeFl8Tnlo7ky3xeKwtmFkds_HprjA7XD2Iq9yNLLi1SKNjLmVxAAzKu3F7hiSbn9wPLryO209X3ZfKqYNUXED0CLQL4SMwYDBKNaKriixLUA6WZlKVkdSOJg6yd_o3zgwxYVxHuqcILc-6dCJeRigEs5yVazAKeufLnKiEoD-xNj2tDpcXb6KwXvgBWvyFE8mbXsf6nohsYtmX_Hffs7chttVeL29N71syKusQPh8ttiMhUxqYCVzQb2BbnVDOA1_oO00zSvA8Q-WXiol3oFzWmXQWYxiNl7hXWNVShhXvkB1ZbVNi37gFDPturU2jY0YRWjtH-dGH7ClaR08xVdegmhtdaHdXRJP1RT9vSvdBIc7TAOX6XjoRe4n73N4Aav0RWFvFGW29imIL94Hu8as49Ine9nOngtEGWI8y62tSbo4OvWax3o2eGO_xafBM6VottVPTXgdltrSvbwLvi7S2doUeae0r-1ylDKj_wuZbeBJ9TpnQrkl5veL6MXryA7FEx-4zcxZ0gGXoSpQx8ViKJFPCRk0q79irI9Zl25BmjrGuNGC4HrjrTOqqCtmk8Gdq5Vfr77Bfwl3MesdSEt_taT-x2LQ5SppY1-7y70A1E4LWRuqEr_PkzWizM1c2gHp3G_OyPEwAUISlzA0Htyxtc9YMADldVGEycp-QdFzlvnghUu9WATVdn_SfIEY7yZUwnYcgebeSMOnD-aGTttIKuO0h3HJnCxPUUmB6Sn1zHPGJOcGw6rAH4LqJrSLkkKtS-AzS3odcgYzUqZ2OpucB21AeFrezSB-pzFmtupo9MkNC0nkZ9SYjg3u8du7VJCDPBCHAFJfIdn-_cCZTXvPHqLbumso8QbXTvbnCKEUmXQdeMBCBrDFOe2n8QsWwYtCZu0GarJZE4s2fSSA5d-5XR8vOR0XwtUVtbzUthPfGPwH7sRiZQ2SW"}</script>
 <input type="file" id="fileInput" accept="application/json,.json" hidden="">
 <input type="file" id="csvInput" accept=".csv,.txt,text/csv,text/plain" hidden="">
 
@@ -3568,6 +3574,16 @@ function sufitOddalenia(svg, v) {
   return Math.max(podstawa, v.w);
 }
 
+/**
+ * Ile przybliżyc na jedno zdarzenie kolka. Szczypanie na gladziku laptopa przychodzi do
+ * przegladarki jako kolko z wcisnietym Ctrl — i z DZIESIECIOKROTNIE mniejszymi wartosciami
+ * niz zabkowanie myszy. Przy jednym mnozniku dla obu gest na gladziku ruszal plan o promil
+ * na zdarzenie, czyli w praktyce nie dzialal.
+ */
+function wspolczynnikKolka(e) {
+  return clamp(Math.exp(e.deltaY * (e.ctrlKey ? 0.012 : 0.0015)), 0.3, 3);
+}
+
 function zoomAt(svg, v, cx, cy, factor) {
   stopViewAnim(svg);             // kolko myszy i szczypanie przerywaja plynne dojscie
   const p = clientToWorld(svg, v, cx, cy);
@@ -3612,47 +3628,69 @@ function fitView(svg, v, venue, pad = 140) {
   applyView(svg, v);
 }
 
-/** Pinch-zoom + przesuwanie dwoma palcami. Zwraca kontroler dla danego <svg>. */
+/**
+ * Szczypanie dwoma palcami. Zbudowane na ZDARZENIACH DOTYKU, a nie na wskaznikach:
+ * `e.touches` to zawsze pelna, aktualna lista palcow na ekranie, wiec stan gestu nie moze
+ * sie rozjechac z rzeczywistoscia. Wersja na `pointerdown`/`pointerup` musiala te palce
+ * zliczac sama — i wystarczylo, ze JEDNO podniesienie palca nie doszlo (na Androidzie
+ * zdarza sie to, gdy scena przerysuje sie miedzy zdjeciem pierwszego a drugiego palca:
+ * element trzymajacy wskaznik znika z DOM), zeby w mapie zostal duch. Skutki byly dokladnie
+ * takie, jak zglosil Mateusz: JEDEN palec liczyl sie jako dwa, wiec zamiast przesuwac plan
+ * przybliżał go i uciekał w bok, a prawdziwe szczypanie dawalo trzy punkty i nie robilo nic.
+ * Zdarzenia dotyku nie maja jak sie zgubic — gest odtwarzamy od zera przy kazdym zdarzeniu.
+ */
 function attachPinch(svg, v, onEnd) {
-  const pts = new Map();
-  let gesture = null;
-  svg.addEventListener("pointerdown", e => {
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size === 2) {
-      const [a, b] = [...pts.values()];
-      gesture = {
-        dist: Math.hypot(a.x - b.x, a.y - b.y),
-        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-        world: clientToWorld(svg, v, (a.x + b.x) / 2, (a.y + b.y) / 2),
-        view: { ...v },
-      };
-      cancelDrag();
-    }
-  });
-  svg.addEventListener("pointermove", e => {
-    if (!pts.has(e.pointerId)) return;
-    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size !== 2 || !gesture) return;
-    const [a, b] = [...pts.values()];
-    const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    const k = clamp(gesture.dist / dist, 0.1, 10);
-    v.w = clamp(gesture.view.w * k, 250, sufitOddalenia(svg, gesture.view));
-    v.h = gesture.view.h * (v.w / gesture.view.w);
+  let gest = null, doOdswiezenia = false;
+  const para = e => (e.touches && e.touches.length >= 2 ? [e.touches[0], e.touches[1]] : null);
+  const rozstaw = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+  const srodek = (a, b) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
+
+  const zacznij = p => {
+    const m = srodek(p[0], p[1]);
+    gest = { dist: rozstaw(p[0], p[1]), world: clientToWorld(svg, v, m.x, m.y), view: { ...v } };
+    cancelDrag();                       // dwa palce to nigdy nie jest przeciaganie stolu
+  };
+
+  svg.addEventListener("touchstart", e => {
+    const p = para(e);
+    if (!p) return;
+    // Blokujemy domyslne zachowanie JUZ przy polozeniu drugiego palca, nie dopiero przy ruchu:
+    // przegladarka rozstrzyga o tym, czy gest jest jej, na samym poczatku. Sam `touch-action`
+    // w CSS bywa tu za slaby (patrz regula dla dzieci <svg>).
+    e.preventDefault();
+    zacznij(p);                         // takze gdy dochodzi trzeci palec — liczymy od nowa
+  }, { passive: false });
+
+  svg.addEventListener("touchmove", e => {
+    const p = para(e);
+    if (!p) return;
+    if (!gest) zacznij(p);
+    e.preventDefault();                 // zaden gest przegladarki nie ma tu nic do roboty
+    const k = clamp(gest.dist / rozstaw(p[0], p[1]), 0.1, 10);
+    const m = srodek(p[0], p[1]);
+    v.w = clamp(gest.view.w * k, 250, sufitOddalenia(svg, gest.view));
+    v.h = gest.view.h * (v.w / gest.view.w);
     const { s, r } = viewScale(svg, v);
-    v.x = gesture.world.x - (mid.x - r.left - (r.width - v.w * s) / 2) / s;
-    v.y = gesture.world.y - (mid.y - r.top - (r.height - v.h * s) / 2) / s;
+    v.x = gest.world.x - (m.x - r.left - (r.width - v.w * s) / 2) / s;
+    v.y = gest.world.y - (m.y - r.top - (r.height - v.h * s) / 2) / s;
     applyView(svg, v);
     zywyRozmiarPodpisow(svg, v);
     if (svg === canvas) updateZoomLabel();
-  });
-  const drop = e => {
-    pts.delete(e.pointerId);
-    if (pts.size < 2 && gesture) { gesture = null; onEnd && onEnd(); }
+  }, { passive: false });
+
+  const koniec = e => {
+    const zostalo = e.touches ? e.touches.length : 0;
+    if (zostalo >= 2) return;                     // zostaly dwa palce: gest trwa dalej
+    if (gest) { gest = null; doOdswiezenia = true; }
+    // Przerysowanie DOPIERO po puszczeniu wszystkich palcow. `renderScene` wymienia cala
+    // zawartosc <svg>, a zdarzenia dotyku ida do elementu zapamietanego przy `touchstart` —
+    // gdyby ten element zniknal z DOM, palec wciaz lezacy na ekranie przestalby cokolwiek
+    // zglaszac. Palce zdejmuje sie pojedynczo, wiec bez tego caly gest potrafil zamilknac.
+    if (zostalo === 0 && doOdswiezenia) { doOdswiezenia = false; onEnd && onEnd(); }
   };
-  svg.addEventListener("pointerup", drop);
-  svg.addEventListener("pointercancel", drop);
-  return { isPinching: () => !!gesture };
+  svg.addEventListener("touchend", koniec);
+  svg.addEventListener("touchcancel", koniec);
+  return { isPinching: () => !!gest };
 }
 
 /* ============================== INTERAKCJE =============================== */
@@ -3959,7 +3997,7 @@ $("#guestList").addEventListener("pointerdown", e => {
 let zoomRedraw;
 canvas.addEventListener("wheel", e => {
   e.preventDefault();
-  zoomAt(canvas, view, e.clientX, e.clientY, clamp(Math.exp(e.deltaY * 0.0015), 0.3, 3));
+  zoomAt(canvas, view, e.clientX, e.clientY, wspolczynnikKolka(e));
   zywyRozmiarPodpisow(canvas, view);
   updateZoomLabel();
   // podpisy mają stały rozmiar na ekranie, więc każda zmiana przybliżenia
@@ -6774,6 +6812,10 @@ function initGuestView() {
   // Powrót do widoku całej sali. Jeden mechanizm dla wszystkich dróg: strzałka w rogu mapy,
   // krzyżyk przy imieniu na karcie, krzyżyk w polu wyszukiwania i klawisz Escape.
   window.gvShowAll = () => {
+    // Powrot do widoku podstawowego czysci TAKZE wpisane nazwisko. Zostawione w polu
+    // przeczylo temu, co widac na planie: wyszukiwarka twierdzila, ze ktos jest wybrany,
+    // a na mapie nie bylo juz ani podswietlenia, ani karty.
+    $("#gvSearch").value = "";
     gvHighlight = null; gvMine = null;
     $("#gvCard").classList.remove("show");
     $("#gvResults").classList.remove("show");
@@ -6822,7 +6864,10 @@ function initGuestView() {
   let gvDrag = null;
   gvCanvas.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
-    if (gvPinch.isPinching()) { gvDrag = null; return; }
+    // Drugi palec NIE przejmuje przesuwania po pierwszym. Przegladarka wysyla `pointerdown`
+    // przed `touchstart`, wiec bez tego przez moment przesuwaniem sterowal palec, ktory
+    // wlasnie zaczynal szczypanie — i plan szarpal w jego strone.
+    if (gvDrag || gvPinch.isPinching()) { gvDrag = null; return; }
     try { gvCanvas.setPointerCapture(e.pointerId); } catch (_) {}
     const p = clientToWorld(gvCanvas, gvView, e.clientX, e.clientY);
     stopViewAnim(gvCanvas);        // palec jest wazniejszy niz trwajaca animacja
@@ -6856,7 +6901,7 @@ function initGuestView() {
   let gvRedraw;
   gvCanvas.addEventListener("wheel", e => {
     e.preventDefault();
-    zoomAt(gvCanvas, gvView, e.clientX, e.clientY, clamp(Math.exp(e.deltaY * 0.0015), 0.3, 3));
+    zoomAt(gvCanvas, gvView, e.clientX, e.clientY, wspolczynnikKolka(e));
     zywyRozmiarPodpisow(gvCanvas, gvView);
     clearTimeout(gvRedraw);
     gvRedraw = setTimeout(poGescie, 60);
